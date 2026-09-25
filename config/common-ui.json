@@ -1,0 +1,6 @@
+{
+  "version": "ui-1.0.0",
+  "cookieAccept": { "en": "Accept all", "fr": "Tout accepter" },
+  "cookieReject": { "en": "Reject all", "fr": "Tout refuser" },
+  "cookieDialog": { "en": "Cookies", "fr": "Cookies" }
+}
