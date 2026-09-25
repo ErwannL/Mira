@@ -41,8 +41,7 @@ describe('funnel report', () => {
     const { events, memories } = await sampleRun();
     const report = buildFunnel(sampleMeta, catalogue, samplePersonas, events, memories, endpoints);
     const golden = join(import.meta.dirname, 'golden', 'funnel.json');
-    if (process.env.UPDATE_GOLDEN === '1')
-      writeFileSync(golden, `${JSON.stringify(report, null, 2)}\n`);
+    if (process.env.UPDATE_GOLDEN === '1') writeFileSync(golden, `${JSON.stringify(report)}\n`);
     expect(JSON.parse(JSON.stringify(report))).toEqual(JSON.parse(readFileSync(golden, 'utf8')));
   });
 

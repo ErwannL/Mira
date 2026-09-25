@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: figura
+          POSTGRES_PASSWORD: figura
+          POSTGRES_DB: figura_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U figura" --health-interval 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://figura:figura@127.0.0.1:5432/figura_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Format
+        run: npm run format:check
+      - name: Lint (0 warnings)
+        run: npm run lint
+      - name: Type check
+        run: npm run typecheck
+      - name: File length, LF endings, READMEs, no skipped tests, secret scan
+        run: npm run check:files && npm run check:readmes && npm run check:tests && npm run check:secrets
+      - name: Tests with 100 % per-file coverage
+        run: npm run test:cov
+      - name: Build
+        run: npm run build
+      - name: End-to-end (fake console → iframe → SSO)
+        run: npm run e2e
+      - name: Dependency audit (no high/critical)
+        run: npm audit --audit-level=high --omit=dev
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare .env for the smoke test
+        run: |
+          cp .env.example .env
+          sed -i "s/=change-me-\(.*\)/=ci-\1-$(openssl rand -hex 12)/" .env
+      - name: docker compose build
+        run: docker compose build
+      - name: Smoke up + health checks
+        run: |
+          docker compose up -d
+          for i in $(seq 1 30); do curl -fs localhost:4000/health && curl -fs localhost:4100/health && break; sleep 5; done
+          curl -fs localhost:4000/health
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: evil.example' localhost:4000/health)" = 404
+      - name: Catalogue drift against the fake Orqea
+        run: |
+          npm ci --ignore-scripts && npm run build
+          npm run drift -- http://localhost:4100
+      - if: always()
+        run: docker compose logs --no-color | tail -200 && docker compose down -v

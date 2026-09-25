@@ -1,0 +1,82 @@
+# `docker compose up`: database, app (UI + API), worker (browser runtime), fake Orqea (+ fake console).
+# Every port is bound to 127.0.0.1 only.
+name: figura
+
+x-env: &common
+  FIGURA_DATABASE_URL: postgres://figura:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/figura
+  SYNTHETIC_SERVICE_SECRET: ${SYNTHETIC_SERVICE_SECRET:?set in .env}
+  FIGURA_SSO_SECRET: ${FIGURA_SSO_SECRET:?set in .env}
+  FIGURA_APP_ID: ${FIGURA_APP_ID:-figura}
+  FIGURA_SCREENSHOTS_DIR: /data/screenshots
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: figura
+      POSTGRES_DB: figura
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+    volumes: [db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U figura -d figura']
+      interval: 5s
+      retries: 10
+    networks: [internal]
+
+  app:
+    build: { context: ., target: app }
+    image: figura-app:latest
+    environment:
+      <<: *common
+      FIGURA_SESSION_SECRET: ${FIGURA_SESSION_SECRET:?set in .env}
+      FIGURA_CONSOLE_ORIGINS: ${FIGURA_CONSOLE_ORIGINS:-http://localhost:4100}
+      FIGURA_HOST: 0.0.0.0
+      FIGURA_PORT: '4000'
+      FIGURA_LOOPBACK_ONLY: ${FIGURA_LOOPBACK_ONLY:-true}
+    ports: ['127.0.0.1:4000:4000']
+    volumes: [screenshots:/data/screenshots]
+    depends_on: { db: { condition: service_healthy } }
+    networks: [internal]
+    read_only: true
+    tmpfs: [/tmp]
+
+  worker:
+    build: { context: ., target: worker }
+    image: figura-worker:latest
+    environment:
+      <<: *common
+      FIGURA_DATA_KEY: ${FIGURA_DATA_KEY:?set in .env}
+      FIGURA_LOCAL_TARGET_HOSTS: fake-orqea
+      FIGURA_PRODUCTION_HOSTS: ${FIGURA_PRODUCTION_HOSTS:-}
+      FIGURA_MAX_ACCOUNTS: ${FIGURA_MAX_ACCOUNTS:-500}
+      FIGURA_MAX_RPS: ${FIGURA_MAX_RPS:-20}
+      FIGURA_MAX_ROWS: ${FIGURA_MAX_ROWS:-100000}
+    volumes: [screenshots:/data/screenshots]
+    depends_on: { db: { condition: service_healthy }, fake-orqea: { condition: service_healthy } }
+    networks: [internal]
+    shm_size: 1gb
+
+  fake-orqea:
+    build: { context: ., target: fake-orqea }
+    image: figura-fake-orqea:latest
+    environment:
+      SYNTHETIC_SERVICE_SECRET: ${SYNTHETIC_SERVICE_SECRET:?set in .env}
+      FIGURA_SSO_SECRET: ${FIGURA_SSO_SECRET:?set in .env}
+      FIGURA_APP_ID: ${FIGURA_APP_ID:-figura}
+      FAKE_HOST: 0.0.0.0
+      FAKE_PORT: '4100'
+      FAKE_ENV: development
+      FAKE_SCENARIO: ${FAKE_SCENARIO:-baseline}
+      # The worker container reaches the admin API over the compose network.
+      FAKE_ADMIN_ALLOWED: ${FAKE_ADMIN_ALLOWED:-172.,192.168.,10.}
+      FAKE_CONSOLE_APP_URL: http://localhost:4000
+    ports: ['127.0.0.1:4100:4100']
+    networks: [internal]
+    read_only: true
+
+networks:
+  internal: {}
+
+volumes:
+  db: {}
+  screenshots: {}

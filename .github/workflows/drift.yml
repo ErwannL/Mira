@@ -1,0 +1,20 @@
+# Optional: nightly catalogue drift check against a staging target (set DRIFT_TARGET_URL).
+name: Catalogue drift
+
+on:
+  workflow_dispatch:
+  schedule: [{ cron: '17 3 * * *' }]
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    if: ${{ vars.DRIFT_TARGET_URL != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --ignore-scripts && npm run build
+      - run: npm run drift -- "${{ vars.DRIFT_TARGET_URL }}"

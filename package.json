@@ -22,7 +22,7 @@
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run check:files && npm run check:readmes && npm run check:tests && npm run check:secrets && npm run test:cov",
     "brand": "node scripts/brand.mjs",
     "sso:mint": "node scripts/mint-sso.mjs",
-    "drift": "node dist/app/cli/drift.js",
+    "drift": "node scripts/drift.mjs",
     "e2e": "vitest run --config vitest.e2e.config.ts",
     "prepare": "node scripts/install-hooks.mjs"
   },
