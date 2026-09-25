@@ -14,7 +14,7 @@ export interface JourneyDeps {
   weights: FrictionWeights;
   target: TargetPort;
   recorder: Recorder;
-  openDriver: () => Promise<Driver>;
+  openDriver: (persona: Persona) => Promise<Driver>;
   shouldStop: () => boolean;
   now: () => Date;
   allowCheckout: boolean;
@@ -71,7 +71,7 @@ export async function runSession(life: Life, sim: Date, deps: JourneyDeps): Prom
   const goals = lifeGoals(persona, life.prng.fork('goals'));
   const plan = sessionPlan(memory, goals, persona, deps.catalogue, sessionPrng);
   await deps.recorder.event(baseEvent(life, sim, deps, 'session', null, `session ${memory.sessions}: ${plan.map((u) => u.id).join(' → ')}`));
-  const driver = await deps.openDriver();
+  const driver = await deps.openDriver(persona);
   try {
     let budget = persona.sessionLengthMin;
     for (const useCase of plan) {
