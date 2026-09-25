@@ -1,0 +1,96 @@
+import { afterEach, describe, expect, it } from 'vitest';
+import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { catalogue } from '../../shared/test-helpers/fixtures.js';
+import { sampleMeta, samplePersonas, sampleRun } from '../../worker/test-helpers/sample-run.js';
+import { buildFunnel } from '../../worker/reports/funnel.js';
+import { saveReport } from '../db/misc.js';
+import { transition } from '../db/runs.js';
+import { makeApp } from '../test-helpers/app.js';
+
+let h: Awaited<ReturnType<typeof makeApp>> | undefined;
+afterEach(async () => {
+  await h?.close();
+  h = undefined;
+});
+const cfg = { kind: 'journey', targetUrl: 'http://localhost:4100' };
+
+describe('runs API', () => {
+  it('meta, create (validated), list, get, cancel, events, delete', async () => {
+    h = await makeApp();
+    const c = await h.login();
+    const meta = await h.api('GET', '/api/meta', c);
+    expect((meta.json.personas as unknown[]).length).toBe(10);
+    expect(meta.json.scenarios).toContain('unclear-signup');
+    expect((await h.api('POST', '/api/runs', c, { config: { kind: 'x' } })).status).toBe(400);
+    expect((await h.api('POST', '/api/runs', c, { config: { ...cfg, personaIds: ['ghost'] } })).json.issues).toEqual(['personaIds: unknown ghost']);
+    const created = await h.api('POST', '/api/runs', c, { config: { ...cfg, seed: 5, label: 'first' } });
+    expect(created.status).toBe(201);
+    const run = created.json.run as { id: string; status: string; seed: number };
+    expect(run).toMatchObject({ status: 'queued', seed: 5 });
+    const random = await h.api('POST', '/api/runs', c, { config: cfg });
+    expect(typeof (random.json.run as { seed: number }).seed).toBe('number');
+    expect(((await h.api('GET', '/api/runs', c)).json.runs as unknown[]).length).toBe(2);
+    const got = await h.api('GET', `/api/runs/${run.id}`, c);
+    expect((got.json.transitions as unknown[]).length).toBe(2);
+    expect((await h.api('GET', '/api/runs/nope', c)).status).toBe(404);
+    expect((await h.api('GET', `/api/runs/${run.id}/events`, c)).json.events).toEqual([]);
+    expect((await h.api('GET', `/api/runs/${run.id}/events?persona=student`, c)).json.events).toEqual([]);
+    expect((await h.api('DELETE', `/api/runs/${run.id}`, c)).status).toBe(409);
+    expect(((await h.api('POST', `/api/runs/${run.id}/cancel`, c)).json.run as { status: string }).status).toBe('cancelled');
+    expect((await h.api('POST', '/api/runs/nope/cancel', c)).status).toBe(404);
+    mkdirSync(join(h.cfg.screenshotsDir, run.id));
+    expect((await h.api('DELETE', `/api/runs/${run.id}`, c)).json).toEqual({ deleted: true });
+    expect(existsSync(join(h.cfg.screenshotsDir, run.id))).toBe(false);
+  });
+});
+
+describe('reports API', () => {
+  async function withFunnel(id: string, h2: NonNullable<typeof h>, c: string) {
+    const r = await h2.api('POST', '/api/runs', c, { config: cfg });
+    const runId = (r.json.run as { id: string }).id;
+    const { events, memories } = await sampleRun();
+    await saveReport(h2.db, runId, 'funnel', buildFunnel({ ...sampleMeta, runId }, catalogue, samplePersonas, events, memories, []));
+    void id;
+    return runId;
+  }
+  it('downloads JSON and self-contained HTML with a sandboxing CSP; screenshots; compare; calibration', async () => {
+    h = await makeApp();
+    const c = await h.login();
+    const a = await withFunnel('a', h, c);
+    const b = await withFunnel('b', h, c);
+    const json = await h.api('GET', `/api/runs/${a}/reports/funnel`, c);
+    expect(json.json.type).toBe('funnel');
+    expect(json.headers['content-disposition']).toContain(`figura-${a}-funnel.json`);
+    const dir = join(h.cfg.screenshotsDir, a);
+    mkdirSync(dir);
+    const shot = (json.json.useCases as { abandonScreenshot: string | null }[]).find((u) => u.abandonScreenshot)!.abandonScreenshot!;
+    writeFileSync(join(dir, shot), Buffer.from([0xff, 0xd8]));
+    const html = await h.api('GET', `/api/runs/${a}/reports/funnel.html?lang=fr`, c);
+    expect(html.headers['content-security-policy']).toContain('sandbox');
+    expect(html.body).toContain('data:image/jpeg;base64,');
+    expect(html.body).toContain('lang="fr"');
+    expect((await h.api('GET', `/api/runs/${a}/reports/funnel.pdf`, c)).status).toBe(404);
+    expect((await h.api('GET', `/api/runs/${a}/reports/secrets`, c)).status).toBe(404);
+    expect((await h.api('GET', `/api/runs/${a}/reports/load`, c)).status).toBe(404);
+    expect((await h.api('GET', `/api/runs/${a}/screenshots/${shot}`, c)).headers['content-type']).toBe('image/jpeg');
+    expect((await h.api('GET', `/api/runs/${a}/screenshots/..%2Fx.jpg`, c)).status).toBe(404);
+    expect((await h.api('GET', `/api/runs/BAD/screenshots/${shot}`, c)).status).toBe(404);
+    const { rows } = await h.db.query("select body from reports where run_id = $1", [b]);
+    rows[0].body.useCases[0].abandonScreenshot = '../../etc/passwd';
+    await saveReport(h.db, b, 'funnel', rows[0].body);
+    expect((await h.api('GET', `/api/runs/${b}/reports/funnel.html`, c)).body).not.toContain('passwd"');
+    const cmp = await h.api('GET', `/api/compare?a=${a}&b=${b}`, c);
+    expect(cmp.json.type).toBe('comparison');
+    expect((await h.api('GET', `/api/compare?a=${a}&b=${b}&format=html`, c)).body).toContain('<!doctype html>');
+    expect((await h.api('GET', `/api/compare?a=${a}`, c)).status).toBe(404);
+    expect((await h.api('GET', '/api/compare', c)).status).toBe(404);
+    const cal = await h.api('POST', `/api/runs/${a}/calibration`, c, { text: 'landing,1\nsignup,0.1' });
+    expect((cal.json.report as { type: string }).type).toBe('calibration');
+    expect((await h.api('GET', `/api/runs/${a}/reports/calibration`, c)).status).toBe(200);
+    expect((await h.api('POST', `/api/runs/${a}/calibration`, c, { text: 'landing,7' })).status).toBe(400);
+    expect((await h.api('POST', `/api/runs/${a}/calibration`, c)).status).toBe(400);
+    expect((await h.api('POST', '/api/runs/zzz/calibration', c, { text: 'a,1' })).status).toBe(404);
+    await transition(h.db, a, 'cancelled', 'ops').catch(() => undefined);
+  });
+});

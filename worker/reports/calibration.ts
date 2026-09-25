@@ -3,7 +3,10 @@ import type { FunnelReport } from './funnel.js';
 import { round4 } from './stats.js';
 
 /** Real aggregates: share (0..1) of real users reaching each headline step. */
-export const realAggregatesSchema = z.object({ funnel: z.record(z.string(), z.number().min(0).max(1)) }).strict();
+export const realAggregatesSchema = z
+  .object({ funnel: z.record(z.string(), z.number().min(0).max(1)) })
+  .strict()
+  .refine((a) => Object.keys(a.funnel).length > 0, 'at least one step is required');
 export type RealAggregates = z.infer<typeof realAggregatesSchema>;
 
 /** Parses "step,share" CSV (header optional) or JSON. */
