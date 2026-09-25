@@ -14,10 +14,17 @@ const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"
 export const esc = (s: unknown): string => String(s).replace(/[&<>"']/g, (c) => ESC[c] as string);
 const fmt = (v: number | null): string => (v === null ? '—' : String(v));
 
-function table(head: string[], rows: (string | number | null)[][]): string {
+/** Trusted markup built by this module (never report content). */
+interface Raw {
+  html: string;
+}
+type Cell = string | number | null | Raw;
+
+function table(head: string[], rows: Cell[][]): string {
   if (rows.length === 0) return '';
   const th = head.map((h) => `<th>${esc(h)}</th>`).join('');
-  const tr = rows.map((r) => `<tr>${r.map((c) => `<td>${typeof c === 'string' && c.startsWith('<') ? c : esc(fmt(c as number | null))}</td>`).join('')}</tr>`).join('');
+  const td = (c: Cell) => (c !== null && typeof c === 'object' ? c.html : esc(fmt(c as number | null)));
+  const tr = rows.map((r) => `<tr>${r.map((c) => `<td>${td(c)}</td>`).join('')}</tr>`).join('');
   return `<table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>`;
 }
 
@@ -32,7 +39,7 @@ function metaBlock(m: ReportMeta, t: (k: I18nKey, p?: Record<string, string | nu
 function funnel(r: FunnelReport, locale: Locale, t: (k: I18nKey) => string, img: ImageSource): string {
   const shot = (f: string | null) => {
     const src = f ? img(f) : null;
-    return src ? `<img alt="${esc(t('report.funnel.abandonShot'))}" src="${src}">` : '—';
+    return src ? { html: `<img alt="${esc(t('report.funnel.abandonShot'))}" src="${esc(src)}">` } : '—';
   };
   return `<h1>${esc(t('report.funnel.title'))}</h1>${metaBlock(r.meta, t)}
 <section><h2>${esc(t('report.funnel.headline'))}</h2>${table([t('report.funnel.step'), t('report.funnel.reached'), t('report.funnel.share')], r.headline.map((h) => [h.id, h.personas, h.weightedShare]))}</section>

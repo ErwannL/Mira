@@ -20,11 +20,13 @@ export function clonesOf(personas: Persona[], targetUsers: number): Persona[] {
   });
 }
 
+/** The run's personas, weights renormalised so the selection models the whole population. */
 export function selectPersonas(all: Persona[], ids: string[]): Persona[] {
-  if (ids.length === 0) return all;
   const unknown = ids.filter((id) => !all.some((p) => p.id === id));
   if (unknown.length) throw new Error(`Unknown personas: ${unknown.join(', ')}`);
-  return all.filter((p) => ids.includes(p.id));
+  const chosen = ids.length === 0 ? all : all.filter((p) => ids.includes(p.id));
+  const total = chosen.reduce((s, p) => s + p.populationWeight, 0);
+  return chosen.map((p) => ({ ...p, populationWeight: p.populationWeight / total }));
 }
 
 export function newCredentials(runId: string) {

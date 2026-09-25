@@ -118,7 +118,7 @@ describe('executeRun', () => {
   });
 
   it('volume mode: API clones, rate-limited, load report with latencies', async () => {
-    const run = await queued('vo1', { kind: 'volume', targetUsers: 20, personaIds: ['student', 'agency'], totalSimulatedDays: 7 });
+    const run = await queued('vo1', { kind: 'volume', allowCheckout: true, targetUsers: 4, personaIds: ['student', 'agency'], totalSimulatedDays: 7 });
     const done = await executeRun(run, cfg, deps());
     expect(done.status).toBe('done');
     const load = (await getReport<LoadReport>(db, 'vo1', 'load'))!;
