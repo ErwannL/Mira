@@ -1,0 +1,95 @@
+{
+  "id": "form-create",
+  "title": {
+    "en": "Create a form",
+    "fr": "Créer un formulaire"
+  },
+  "area": "forms",
+  "requires": [
+    "login"
+  ],
+  "planGate": "free",
+  "minutes": 3,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/forms"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Form title",
+          "fr": "Titre du formulaire"
+        }
+      },
+      "value": "Registration"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Question",
+          "fr": "Question"
+        }
+      },
+      "value": "Your name?"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Create form",
+          "fr": "Créer le formulaire"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "Public link",
+          "fr": "Lien public"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/forms",
+      "body": {
+        "title": "Registration",
+        "questions": [
+          "Your name?"
+        ]
+      },
+      "auth": true,
+      "save": {
+        "formId": "id"
+      },
+      "expectStatus": [
+        201
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "link",
+      "name": {
+        "en": "Public link",
+        "fr": "Lien public"
+      }
+    },
+    "apiStatus": 201
+  },
+  "frictionHints": {
+    "fields": 2,
+    "clicks": 1,
+    "words": 100
+  }
+}

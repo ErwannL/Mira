@@ -1,0 +1,53 @@
+{
+  "name": "figura",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Figura by Orqea — deterministic synthetic-user simulator",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:cov": "vitest run --coverage",
+    "check:files": "node scripts/check-files.mjs",
+    "check:readmes": "node scripts/check-readmes.mjs",
+    "check:tests": "node scripts/check-tests.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run check:files && npm run check:readmes && npm run check:tests && npm run check:secrets && npm run test:cov",
+    "brand": "node scripts/brand.mjs",
+    "sso:mint": "node scripts/mint-sso.mjs",
+    "drift": "node dist/app/cli/drift.js",
+    "e2e": "vitest run --config vitest.e2e.config.ts",
+    "prepare": "node scripts/install-hooks.mjs"
+  },
+  "dependencies": {
+    "@fastify/cookie": "11.1.2",
+    "@fastify/static": "10.1.4",
+    "fastify": "5.12.5",
+    "pg": "8.23.0",
+    "playwright": "1.56.1",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@types/node": "26.6.2",
+    "@types/pg": "8.23.1",
+    "@vitest/coverage-v8": "3.2.7",
+    "eslint": "9.39.5",
+    "fast-check": "4.10.2",
+    "happy-dom": "20.14.5",
+    "png-to-ico": "3.0.2",
+    "prettier": "3.9.9",
+    "sharp": "0.35.4",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.70.1",
+    "vite": "7.3.6",
+    "vitest": "3.2.7"
+  }
+}

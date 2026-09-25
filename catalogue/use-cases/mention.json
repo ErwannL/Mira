@@ -1,0 +1,101 @@
+{
+  "id": "mention",
+  "title": {
+    "en": "Mention a teammate",
+    "fr": "Mentionner un coéquipier"
+  },
+  "area": "collaboration",
+  "requires": [
+    "comment",
+    "invite-member"
+  ],
+  "planGate": "free",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/boards"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{boardName}}",
+          "fr": "{{boardName}}"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{cardTitle}}",
+          "fr": "{{cardTitle}}"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Comment",
+          "fr": "Commentaire"
+        }
+      },
+      "value": "@{{inviteEmail}} can you check?"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Post comment",
+          "fr": "Publier"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "status",
+        "name": {
+          "en": "Comment posted",
+          "fr": "Commentaire publié"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/cards/{{cardId}}/comments",
+      "body": {
+        "text": "@{{inviteEmail}} can you check?"
+      },
+      "auth": true,
+      "expectStatus": [
+        201
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "status",
+      "name": {
+        "en": "Comment posted",
+        "fr": "Commentaire publié"
+      }
+    },
+    "apiStatus": 201
+  },
+  "frictionHints": {
+    "fields": 3,
+    "clicks": 3,
+    "words": 100
+  }
+}

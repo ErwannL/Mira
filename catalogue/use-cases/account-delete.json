@@ -1,0 +1,74 @@
+{
+  "id": "account-delete",
+  "title": {
+    "en": "Delete my account",
+    "fr": "Supprimer mon compte"
+  },
+  "area": "settings",
+  "requires": [
+    "login"
+  ],
+  "planGate": "free",
+  "minutes": 2,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/settings"
+    },
+    {
+      "action": "check",
+      "target": {
+        "role": "checkbox",
+        "name": {
+          "en": "I understand this cannot be undone",
+          "fr": "Je comprends que c'est irréversible"
+        }
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Delete my account",
+          "fr": "Supprimer mon compte"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "heading",
+        "name": {
+          "en": "Account deleted",
+          "fr": "Compte supprimé"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "DELETE",
+      "path": "/api/me",
+      "auth": true,
+      "expectStatus": [
+        200
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "heading",
+      "name": {
+        "en": "Account deleted",
+        "fr": "Compte supprimé"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 2,
+    "clicks": 2,
+    "words": 80
+  }
+}

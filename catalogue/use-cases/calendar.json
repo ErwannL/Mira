@@ -1,0 +1,61 @@
+{
+  "id": "calendar",
+  "title": {
+    "en": "Calendar",
+    "fr": "Calendrier"
+  },
+  "area": "planning",
+  "requires": [
+    "create-card"
+  ],
+  "planGate": "free",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/calendar"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Next month",
+          "fr": "Mois suivant"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "heading",
+        "name": {
+          "en": "Calendar",
+          "fr": "Calendrier"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "GET",
+      "path": "/api/calendar",
+      "auth": true
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "heading",
+      "name": {
+        "en": "Calendar",
+        "fr": "Calendrier"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 0,
+    "clicks": 1,
+    "words": 120
+  }
+}

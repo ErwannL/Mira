@@ -1,0 +1,51 @@
+{
+  "id": "billing-view-plans",
+  "title": {
+    "en": "View plans",
+    "fr": "Voir les offres"
+  },
+  "area": "billing",
+  "requires": [
+    "login"
+  ],
+  "planGate": "free",
+  "minutes": 2,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/billing"
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "heading",
+        "name": {
+          "en": "Plans",
+          "fr": "Offres"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "GET",
+      "path": "/api/billing/plans",
+      "auth": false
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "heading",
+      "name": {
+        "en": "Plans",
+        "fr": "Offres"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 0,
+    "clicks": 1,
+    "words": 200
+  }
+}

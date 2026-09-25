@@ -1,0 +1,67 @@
+{
+  "id": "billing-checkout",
+  "title": {
+    "en": "Checkout (test mode)",
+    "fr": "Paiement (mode test)"
+  },
+  "area": "billing",
+  "requires": [
+    "billing-view-plans"
+  ],
+  "planGate": "free",
+  "minutes": 2,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/billing"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Choose {{planName}}",
+          "fr": "Choisir {{planName}}"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "heading",
+        "name": {
+          "en": "Checkout (test mode)",
+          "fr": "Paiement (mode test)"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/billing/checkout",
+      "body": {
+        "planKey": "{{planKey}}"
+      },
+      "auth": true,
+      "expectStatus": [
+        200
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "heading",
+      "name": {
+        "en": "Checkout (test mode)",
+        "fr": "Paiement (mode test)"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 0,
+    "clicks": 1,
+    "words": 150
+  }
+}

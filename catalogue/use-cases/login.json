@@ -1,0 +1,93 @@
+{
+  "id": "login",
+  "title": {
+    "en": "Log in",
+    "fr": "Connexion"
+  },
+  "area": "acquisition",
+  "requires": [
+    "verify-email"
+  ],
+  "planGate": "free",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/login"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Email",
+          "fr": "Adresse e-mail"
+        }
+      },
+      "value": "{{email}}"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "password",
+        "name": {
+          "en": "Password",
+          "fr": "Mot de passe"
+        }
+      },
+      "value": "{{password}}"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Log in",
+          "fr": "Se connecter"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "searchbox",
+        "name": {
+          "en": "Search",
+          "fr": "Rechercher"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "body": {
+        "email": "{{email}}",
+        "password": "{{password}}"
+      },
+      "auth": false,
+      "save": {
+        "token": "token"
+      },
+      "expectStatus": [
+        200
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "searchbox",
+      "name": {
+        "en": "Search",
+        "fr": "Rechercher"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 2,
+    "clicks": 1,
+    "words": 60
+  }
+}

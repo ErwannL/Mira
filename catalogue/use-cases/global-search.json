@@ -1,0 +1,68 @@
+{
+  "id": "global-search",
+  "title": {
+    "en": "Global search",
+    "fr": "Recherche globale"
+  },
+  "area": "navigation",
+  "requires": [
+    "create-card"
+  ],
+  "planGate": "free",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/boards"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "searchbox",
+        "name": {
+          "en": "Search",
+          "fr": "Rechercher"
+        }
+      },
+      "value": "{{cardTitle}}"
+    },
+    {
+      "action": "press",
+      "key": "Enter"
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{cardTitle}}",
+          "fr": "{{cardTitle}}"
+        },
+        "exact": true
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "GET",
+      "path": "/api/search?q={{cardTitle}}",
+      "auth": true
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "link",
+      "name": {
+        "en": "{{cardTitle}}",
+        "fr": "{{cardTitle}}"
+      },
+      "exact": true
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 1,
+    "clicks": 1,
+    "words": 80
+  }
+}

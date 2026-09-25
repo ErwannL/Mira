@@ -1,0 +1,92 @@
+{
+  "id": "create-list",
+  "title": {
+    "en": "Create a list",
+    "fr": "Créer une liste"
+  },
+  "area": "boards",
+  "requires": [
+    "create-board"
+  ],
+  "planGate": "free",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/boards"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{boardName}}",
+          "fr": "{{boardName}}"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "List name",
+          "fr": "Nom de la liste"
+        }
+      },
+      "value": "Backlog"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Add list",
+          "fr": "Ajouter la liste"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "region",
+        "name": {
+          "en": "Backlog",
+          "fr": "Backlog"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/boards/{{boardId}}/lists",
+      "body": {
+        "name": "Backlog"
+      },
+      "auth": true,
+      "save": {
+        "listId": "id"
+      },
+      "expectStatus": [
+        201
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "region",
+      "name": {
+        "en": "Backlog",
+        "fr": "Backlog"
+      }
+    },
+    "apiStatus": 201
+  },
+  "frictionHints": {
+    "fields": 3,
+    "clicks": 2,
+    "words": 120
+  }
+}

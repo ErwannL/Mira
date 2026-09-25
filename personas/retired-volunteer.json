@@ -1,0 +1,41 @@
+{
+  "id": "retired-volunteer",
+  "displayName": "Monique, retired volunteer",
+  "bio": "Retired, runs the food-bank rota of a local association from her phone. Distrusts sites that ask for too much.",
+  "locale": "fr",
+  "device": "mobile",
+  "timezone": "Europe/Paris",
+  "goal": "A shared to-do list for the association volunteers",
+  "goalFeatures": [
+    "create-board",
+    "create-list",
+    "create-card",
+    "invite-without-account"
+  ],
+  "urgency": 0.4,
+  "techSavvy": 0.1,
+  "readingTolerance": 0.15,
+  "errorProneness": 0.5,
+  "patience": 0.2,
+  "frictionTolerance": 0.15,
+  "recoveryWillingness": 0.3,
+  "curiosity": 0.1,
+  "tutorialAffinity": 0.6,
+  "teamSize": 6,
+  "invitesOthers": 0.7,
+  "budget": 0,
+  "priceSensitivity": 1,
+  "valueThreshold": 0.9,
+  "privacyConcern": 0.9,
+  "activityLevel": 0.3,
+  "sessionsPerWeek": 2,
+  "activeHours": [
+    9,
+    10,
+    11,
+    17,
+    18
+  ],
+  "sessionLengthMin": 10,
+  "populationWeight": 0.08
+}

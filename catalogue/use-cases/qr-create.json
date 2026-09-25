@@ -1,0 +1,78 @@
+{
+  "id": "qr-create",
+  "title": {
+    "en": "Create a QR code",
+    "fr": "Créer un QR code"
+  },
+  "area": "sharing",
+  "requires": [
+    "login"
+  ],
+  "planGate": "qr",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/qr"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Link to encode",
+          "fr": "Lien à encoder"
+        }
+      },
+      "value": "https://example.org"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Generate QR code",
+          "fr": "Générer le QR code"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "img",
+        "name": {
+          "en": "QR code",
+          "fr": "QR code"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/qr",
+      "body": {
+        "url": "https://example.org"
+      },
+      "auth": true,
+      "expectStatus": [
+        201
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "img",
+      "name": {
+        "en": "QR code",
+        "fr": "QR code"
+      }
+    },
+    "apiStatus": 201
+  },
+  "frictionHints": {
+    "fields": 1,
+    "clicks": 1,
+    "words": 60
+  }
+}

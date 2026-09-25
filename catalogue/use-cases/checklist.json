@@ -1,0 +1,100 @@
+{
+  "id": "checklist",
+  "title": {
+    "en": "Checklist",
+    "fr": "Liste de contrôle"
+  },
+  "area": "cards",
+  "requires": [
+    "create-card"
+  ],
+  "planGate": "free",
+  "minutes": 2,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/boards"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{boardName}}",
+          "fr": "{{boardName}}"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{cardTitle}}",
+          "fr": "{{cardTitle}}"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "New checklist item",
+          "fr": "Nouvel élément"
+        }
+      },
+      "value": "Call the supplier"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Add item",
+          "fr": "Ajouter l'élément"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "checkbox",
+        "name": {
+          "en": "Call the supplier",
+          "fr": "Call the supplier"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/cards/{{cardId}}/checklist",
+      "body": {
+        "text": "Call the supplier"
+      },
+      "auth": true,
+      "expectStatus": [
+        201
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "checkbox",
+      "name": {
+        "en": "Call the supplier",
+        "fr": "Call the supplier"
+      }
+    },
+    "apiStatus": 201
+  },
+  "frictionHints": {
+    "fields": 3,
+    "clicks": 3,
+    "words": 100
+  }
+}

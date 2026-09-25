@@ -1,0 +1,123 @@
+{
+  "id": "automation-rule",
+  "title": {
+    "en": "Automation rule",
+    "fr": "Règle d'automatisation"
+  },
+  "area": "automation",
+  "requires": [
+    "create-board"
+  ],
+  "planGate": "automation",
+  "minutes": 3,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/boards"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{boardName}}",
+          "fr": "{{boardName}}"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "Automations",
+          "fr": "Automatisations"
+        }
+      }
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Rule name",
+          "fr": "Nom de la règle"
+        }
+      },
+      "value": "Archive done cards"
+    },
+    {
+      "action": "select",
+      "target": {
+        "role": "combobox",
+        "name": {
+          "en": "When",
+          "fr": "Quand"
+        }
+      },
+      "value": "card-moved-done"
+    },
+    {
+      "action": "select",
+      "target": {
+        "role": "combobox",
+        "name": {
+          "en": "Then",
+          "fr": "Alors"
+        }
+      },
+      "value": "archive"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Create rule",
+          "fr": "Créer la règle"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "status",
+        "name": {
+          "en": "Rule created",
+          "fr": "Règle créée"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/boards/{{boardId}}/automations",
+      "body": {
+        "name": "Archive done cards",
+        "trigger": "card-moved-done",
+        "action": "archive"
+      },
+      "auth": true,
+      "expectStatus": [
+        201
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "status",
+      "name": {
+        "en": "Rule created",
+        "fr": "Règle créée"
+      }
+    },
+    "apiStatus": 201
+  },
+  "frictionHints": {
+    "fields": 3,
+    "clicks": 4,
+    "words": 150
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "id": "data-export",
+  "title": {
+    "en": "Export my data",
+    "fr": "Exporter mes données"
+  },
+  "area": "settings",
+  "requires": [
+    "login"
+  ],
+  "planGate": "export",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/settings"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Export my data",
+          "fr": "Exporter mes données"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "status",
+        "name": {
+          "en": "Export ready",
+          "fr": "Export prêt"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "GET",
+      "path": "/api/export",
+      "auth": true
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "status",
+      "name": {
+        "en": "Export ready",
+        "fr": "Export prêt"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 2,
+    "clicks": 1,
+    "words": 80
+  }
+}

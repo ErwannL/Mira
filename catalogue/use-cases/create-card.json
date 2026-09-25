@@ -1,0 +1,102 @@
+{
+  "id": "create-card",
+  "title": {
+    "en": "Create a card",
+    "fr": "Créer une carte"
+  },
+  "area": "cards",
+  "requires": [
+    "create-board"
+  ],
+  "planGate": "free",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/boards"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{boardName}}",
+          "fr": "{{boardName}}"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Card title",
+          "fr": "Titre de la carte"
+        }
+      },
+      "value": "{{cardTitle}}"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Add card",
+          "fr": "Ajouter la carte"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{cardTitle}}",
+          "fr": "{{cardTitle}}"
+        },
+        "exact": true
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "GET",
+      "path": "/api/boards/{{boardId}}",
+      "auth": true,
+      "save": {
+        "listId": "lists.0.id"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/lists/{{listId}}/cards",
+      "body": {
+        "title": "{{cardTitle}}"
+      },
+      "auth": true,
+      "save": {
+        "cardId": "id"
+      },
+      "expectStatus": [
+        201
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "link",
+      "name": {
+        "en": "{{cardTitle}}",
+        "fr": "{{cardTitle}}"
+      },
+      "exact": true
+    },
+    "apiStatus": 201
+  },
+  "frictionHints": {
+    "fields": 3,
+    "clicks": 2,
+    "words": 120
+  }
+}

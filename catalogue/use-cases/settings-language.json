@@ -1,0 +1,75 @@
+{
+  "id": "settings-language",
+  "title": {
+    "en": "Change language",
+    "fr": "Changer de langue"
+  },
+  "area": "settings",
+  "requires": [
+    "login"
+  ],
+  "planGate": "free",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/settings"
+    },
+    {
+      "action": "select",
+      "target": {
+        "role": "combobox",
+        "name": {
+          "en": "Language",
+          "fr": "Langue"
+        }
+      },
+      "value": "{{locale}}"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Save settings",
+          "fr": "Enregistrer les préférences"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "status",
+        "name": {
+          "en": "Settings saved",
+          "fr": "Préférences enregistrées"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "PATCH",
+      "path": "/api/me/settings",
+      "body": {
+        "language": "{{locale}}"
+      },
+      "auth": true
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "status",
+      "name": {
+        "en": "Settings saved",
+        "fr": "Préférences enregistrées"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 2,
+    "clicks": 1,
+    "words": 80
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "id": "invite-without-account",
+  "title": {
+    "en": "Invite someone without an account",
+    "fr": "Inviter sans compte"
+  },
+  "area": "collaboration",
+  "requires": [
+    "create-board"
+  ],
+  "planGate": "free",
+  "minutes": 2,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/boards"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{boardName}}",
+          "fr": "{{boardName}}"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "Members",
+          "fr": "Membres"
+        }
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Create a guest link",
+          "fr": "Créer un lien invité"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "status",
+        "name": {
+          "en": "Guest link created",
+          "fr": "Lien invité créé"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/boards/{{boardId}}/guest-links",
+      "body": {},
+      "auth": true,
+      "expectStatus": [
+        201
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "status",
+      "name": {
+        "en": "Guest link created",
+        "fr": "Lien invité créé"
+      }
+    },
+    "apiStatus": 201
+  },
+  "frictionHints": {
+    "fields": 1,
+    "clicks": 3,
+    "words": 100
+  }
+}

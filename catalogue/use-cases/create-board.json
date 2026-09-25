@@ -1,0 +1,81 @@
+{
+  "id": "create-board",
+  "title": {
+    "en": "Create a board",
+    "fr": "Créer un tableau"
+  },
+  "area": "boards",
+  "requires": [
+    "login"
+  ],
+  "planGate": "free",
+  "minutes": 2,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/boards"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Board name",
+          "fr": "Nom du tableau"
+        }
+      },
+      "value": "{{boardName}}"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Create board",
+          "fr": "Créer le tableau"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "heading",
+        "name": {
+          "en": "{{boardName}}",
+          "fr": "{{boardName}}"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/boards",
+      "body": {
+        "name": "{{boardName}}"
+      },
+      "auth": true,
+      "save": {
+        "boardId": "id"
+      },
+      "expectStatus": [
+        201
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "heading",
+      "name": {
+        "en": "{{boardName}}",
+        "fr": "{{boardName}}"
+      }
+    },
+    "apiStatus": 201
+  },
+  "frictionHints": {
+    "fields": 1,
+    "clicks": 1,
+    "words": 80
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "id": "move-card",
+  "title": {
+    "en": "Move a card (drag and drop)",
+    "fr": "Déplacer une carte (glisser-déposer)"
+  },
+  "area": "cards",
+  "requires": [
+    "create-card"
+  ],
+  "planGate": "free",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/boards"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{boardName}}",
+          "fr": "{{boardName}}"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "drag",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{cardTitle}}",
+          "fr": "{{cardTitle}}"
+        },
+        "exact": true
+      },
+      "to": {
+        "role": "region",
+        "name": {
+          "en": "Done",
+          "fr": "Terminé"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "status",
+        "name": {
+          "en": "Card moved",
+          "fr": "Carte déplacée"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "GET",
+      "path": "/api/boards/{{boardId}}",
+      "auth": true,
+      "save": {
+        "doneListId": "lists.2.id"
+      }
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/cards/{{cardId}}",
+      "body": {
+        "listId": "{{doneListId}}"
+      },
+      "auth": true
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "status",
+      "name": {
+        "en": "Card moved",
+        "fr": "Carte déplacée"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 3,
+    "clicks": 2,
+    "words": 120
+  }
+}

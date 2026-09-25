@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["app", "worker", "shared", "fake-orqea"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/test-helpers/**"]
+}

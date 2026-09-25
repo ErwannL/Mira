@@ -1,0 +1,82 @@
+{
+  "id": "onboarding",
+  "title": {
+    "en": "Onboarding tutorial",
+    "fr": "Tutoriel de démarrage"
+  },
+  "area": "activation",
+  "requires": [
+    "login"
+  ],
+  "planGate": "free",
+  "minutes": 3,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/onboarding"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Next",
+          "fr": "Suivant"
+        }
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Next",
+          "fr": "Suivant"
+        }
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Finish",
+          "fr": "Terminer"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "heading",
+        "name": {
+          "en": "Your boards",
+          "fr": "Vos tableaux"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/onboarding/complete",
+      "body": {},
+      "auth": true
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "heading",
+      "name": {
+        "en": "Your boards",
+        "fr": "Vos tableaux"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 0,
+    "clicks": 3,
+    "words": 250
+  }
+}

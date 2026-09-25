@@ -1,0 +1,75 @@
+{
+  "id": "settings-theme",
+  "title": {
+    "en": "Change theme",
+    "fr": "Changer de thème"
+  },
+  "area": "settings",
+  "requires": [
+    "login"
+  ],
+  "planGate": "free",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/settings"
+    },
+    {
+      "action": "select",
+      "target": {
+        "role": "combobox",
+        "name": {
+          "en": "Theme",
+          "fr": "Thème"
+        }
+      },
+      "value": "dark"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Save settings",
+          "fr": "Enregistrer les préférences"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "status",
+        "name": {
+          "en": "Settings saved",
+          "fr": "Préférences enregistrées"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "PATCH",
+      "path": "/api/me/settings",
+      "body": {
+        "theme": "dark"
+      },
+      "auth": true
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "status",
+      "name": {
+        "en": "Settings saved",
+        "fr": "Préférences enregistrées"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 2,
+    "clicks": 1,
+    "words": 80
+  }
+}

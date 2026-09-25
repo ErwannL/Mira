@@ -1,0 +1,48 @@
+{
+  "id": "screen-reader-user",
+  "displayName": "Jordan, screen-reader user",
+  "bio": "Blind operations analyst using a screen reader and keyboard only; navigates exclusively by roles and accessible names.",
+  "locale": "en",
+  "device": "desktop",
+  "timezone": "America/Chicago",
+  "goal": "Personal task board usable with a screen reader",
+  "goalFeatures": [
+    "create-board",
+    "create-list",
+    "create-card",
+    "edit-card",
+    "comment"
+  ],
+  "urgency": 0.5,
+  "techSavvy": 0.7,
+  "readingTolerance": 0.7,
+  "errorProneness": 0.15,
+  "patience": 0.6,
+  "frictionTolerance": 0.5,
+  "recoveryWillingness": 0.6,
+  "curiosity": 0.3,
+  "tutorialAffinity": 0.5,
+  "teamSize": 3,
+  "invitesOthers": 0.3,
+  "budget": 10,
+  "priceSensitivity": 0.6,
+  "valueThreshold": 0.6,
+  "privacyConcern": 0.5,
+  "activityLevel": 0.5,
+  "sessionsPerWeek": 5,
+  "activeHours": [
+    9,
+    10,
+    11,
+    13,
+    14,
+    15,
+    16
+  ],
+  "sessionLengthMin": 25,
+  "populationWeight": 0.04,
+  "assistive": {
+    "screenReader": true,
+    "keyboardOnly": true
+  }
+}

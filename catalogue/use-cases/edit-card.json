@@ -1,0 +1,97 @@
+{
+  "id": "edit-card",
+  "title": {
+    "en": "Edit a card",
+    "fr": "Modifier une carte"
+  },
+  "area": "cards",
+  "requires": [
+    "create-card"
+  ],
+  "planGate": "free",
+  "minutes": 2,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/boards"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{boardName}}",
+          "fr": "{{boardName}}"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{cardTitle}}",
+          "fr": "{{cardTitle}}"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Description",
+          "fr": "Description"
+        }
+      },
+      "value": "Details written by {{personaName}}"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Save",
+          "fr": "Enregistrer"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "status",
+        "name": {
+          "en": "Saved",
+          "fr": "Enregistré"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "PATCH",
+      "path": "/api/cards/{{cardId}}",
+      "body": {
+        "description": "Details"
+      },
+      "auth": true
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "status",
+      "name": {
+        "en": "Saved",
+        "fr": "Enregistré"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 3,
+    "clicks": 3,
+    "words": 100
+  }
+}

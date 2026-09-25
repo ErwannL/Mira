@@ -1,0 +1,116 @@
+{
+  "id": "signup",
+  "title": {
+    "en": "Sign up",
+    "fr": "Inscription"
+  },
+  "area": "acquisition",
+  "requires": [
+    "landing"
+  ],
+  "planGate": "free",
+  "minutes": 3,
+  "mistakes": [
+    "typoEmail",
+    "weakPassword",
+    "forgetTerms"
+  ],
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "Sign up",
+          "fr": "Créer un compte"
+        }
+      }
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Email",
+          "fr": "Adresse e-mail"
+        }
+      },
+      "value": "{{email}}"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "password",
+        "name": {
+          "en": "Password",
+          "fr": "Mot de passe"
+        }
+      },
+      "value": "{{password}}"
+    },
+    {
+      "action": "check",
+      "target": {
+        "role": "checkbox",
+        "name": {
+          "en": "I accept the terms",
+          "fr": "J'accepte les conditions"
+        }
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Create account",
+          "fr": "Créer mon compte"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "heading",
+        "name": {
+          "en": "Check your inbox",
+          "fr": "Vérifiez votre boîte mail"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/auth/register",
+      "body": {
+        "email": "{{email}}",
+        "password": "{{password}}",
+        "acceptedTerms": true
+      },
+      "auth": false,
+      "expectStatus": [
+        201
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "heading",
+      "name": {
+        "en": "Check your inbox",
+        "fr": "Vérifiez votre boîte mail"
+      }
+    },
+    "apiStatus": 201
+  },
+  "frictionHints": {
+    "fields": 3,
+    "clicks": 2,
+    "words": 120
+  }
+}

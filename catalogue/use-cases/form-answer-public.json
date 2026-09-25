@@ -1,0 +1,90 @@
+{
+  "id": "form-answer-public",
+  "title": {
+    "en": "Answer a public form",
+    "fr": "Répondre à un formulaire public"
+  },
+  "area": "forms",
+  "requires": [
+    "form-create"
+  ],
+  "planGate": "free",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/forms"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "Public link",
+          "fr": "Lien public"
+        }
+      }
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Your answer",
+          "fr": "Votre réponse"
+        }
+      },
+      "value": "Dominique"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Send",
+          "fr": "Envoyer"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "status",
+        "name": {
+          "en": "Answer sent",
+          "fr": "Réponse envoyée"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/public/forms/{{formId}}/answers",
+      "body": {
+        "answers": [
+          "Dominique"
+        ]
+      },
+      "auth": false,
+      "expectStatus": [
+        201
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "status",
+      "name": {
+        "en": "Answer sent",
+        "fr": "Réponse envoyée"
+      }
+    },
+    "apiStatus": 201
+  },
+  "frictionHints": {
+    "fields": 1,
+    "clicks": 1,
+    "words": 60
+  }
+}

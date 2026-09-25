@@ -1,0 +1,43 @@
+{
+  "id": "business-owner",
+  "displayName": "Karim, small-business owner",
+  "bio": "Runs a bakery with eight staff; wants shifts and supplier reminders in one place, no time to waste.",
+  "locale": "fr",
+  "device": "desktop",
+  "timezone": "Europe/Paris",
+  "goal": "Team calendar and reminders for eight employees",
+  "goalFeatures": [
+    "create-board",
+    "create-card",
+    "invite-member",
+    "calendar",
+    "notes-reminder",
+    "billing-view-plans"
+  ],
+  "urgency": 0.8,
+  "techSavvy": 0.35,
+  "readingTolerance": 0.2,
+  "errorProneness": 0.3,
+  "patience": 0.2,
+  "frictionTolerance": 0.3,
+  "recoveryWillingness": 0.4,
+  "curiosity": 0.2,
+  "tutorialAffinity": 0.2,
+  "teamSize": 8,
+  "invitesOthers": 0.8,
+  "budget": 30,
+  "priceSensitivity": 0.5,
+  "valueThreshold": 0.55,
+  "privacyConcern": 0.4,
+  "activityLevel": 0.5,
+  "sessionsPerWeek": 4,
+  "activeHours": [
+    6,
+    7,
+    13,
+    14,
+    20
+  ],
+  "sessionLengthMin": 10,
+  "populationWeight": 0.12
+}

@@ -1,0 +1,8 @@
+{
+  "version": "time-1.0.0",
+  "peakHours": [9, 10, 11, 14, 15, 16],
+  "workHours": [8, 12, 13, 17],
+  "morningHours": [6, 7],
+  "multipliers": { "peak": 1.5, "work": 1.0, "morning": 0.8, "offPeak": 0.4 },
+  "outsideActiveHoursFactor": 0.05
+}

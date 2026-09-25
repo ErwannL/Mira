@@ -1,0 +1,53 @@
+{
+  "id": "verify-email",
+  "title": {
+    "en": "Verify email",
+    "fr": "Vérifier l'e-mail"
+  },
+  "area": "acquisition",
+  "requires": [
+    "signup"
+  ],
+  "planGate": "free",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "openVerifyUrl"
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "heading",
+        "name": {
+          "en": "Email verified",
+          "fr": "Adresse vérifiée"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "GET",
+      "path": "/api/auth/verify-email?token={{verifyToken}}",
+      "auth": false,
+      "expectStatus": [
+        200
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "heading",
+      "name": {
+        "en": "Email verified",
+        "fr": "Adresse vérifiée"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 0,
+    "clicks": 1,
+    "words": 60
+  }
+}

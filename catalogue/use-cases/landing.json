@@ -1,0 +1,48 @@
+{
+  "id": "landing",
+  "title": {
+    "en": "Landing page",
+    "fr": "Page d'accueil"
+  },
+  "area": "acquisition",
+  "requires": [],
+  "planGate": "free",
+  "minutes": 1,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/"
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "Sign up",
+          "fr": "Créer un compte"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "GET",
+      "path": "/api/billing/plans",
+      "auth": false
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "link",
+      "name": {
+        "en": "Sign up",
+        "fr": "Créer un compte"
+      }
+    }
+  },
+  "frictionHints": {
+    "fields": 0,
+    "clicks": 0,
+    "words": 150
+  }
+}

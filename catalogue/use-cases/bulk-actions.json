@@ -1,0 +1,99 @@
+{
+  "id": "bulk-actions",
+  "title": {
+    "en": "Bulk actions",
+    "fr": "Actions groupées"
+  },
+  "area": "cards",
+  "requires": [
+    "create-card"
+  ],
+  "planGate": "bulk",
+  "minutes": 2,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/boards"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{boardName}}",
+          "fr": "{{boardName}}"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Select cards",
+          "fr": "Sélectionner des cartes"
+        }
+      }
+    },
+    {
+      "action": "check",
+      "target": {
+        "role": "checkbox",
+        "name": {
+          "en": "Select {{cardTitle}}",
+          "fr": "Sélectionner {{cardTitle}}"
+        }
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Mark selected high priority",
+          "fr": "Priorité haute pour la sélection"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "status",
+        "name": {
+          "en": "Cards updated",
+          "fr": "Cartes mises à jour"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/cards/bulk",
+      "body": {
+        "cardIds": [
+          "{{cardId}}"
+        ],
+        "action": "priority",
+        "value": "high"
+      },
+      "auth": true
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "status",
+      "name": {
+        "en": "Cards updated",
+        "fr": "Cartes mises à jour"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 3,
+    "clicks": 4,
+    "words": 120
+  }
+}

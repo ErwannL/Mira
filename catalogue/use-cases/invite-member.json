@@ -1,0 +1,99 @@
+{
+  "id": "invite-member",
+  "title": {
+    "en": "Invite a member",
+    "fr": "Inviter un membre"
+  },
+  "area": "collaboration",
+  "requires": [
+    "create-board"
+  ],
+  "planGate": "free",
+  "minutes": 2,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/boards"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "{{boardName}}",
+          "fr": "{{boardName}}"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "link",
+        "name": {
+          "en": "Members",
+          "fr": "Membres"
+        }
+      }
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Email of the person to invite",
+          "fr": "E-mail de la personne à inviter"
+        }
+      },
+      "value": "{{inviteEmail}}"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Send invitation",
+          "fr": "Envoyer l'invitation"
+        }
+      }
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "status",
+        "name": {
+          "en": "Invitation sent",
+          "fr": "Invitation envoyée"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/boards/{{boardId}}/members",
+      "body": {
+        "email": "{{inviteEmail}}"
+      },
+      "auth": true,
+      "expectStatus": [
+        201
+      ]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "status",
+      "name": {
+        "en": "Invitation sent",
+        "fr": "Invitation envoyée"
+      }
+    },
+    "apiStatus": 201
+  },
+  "frictionHints": {
+    "fields": 1,
+    "clicks": 3,
+    "words": 100
+  }
+}
