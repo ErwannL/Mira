@@ -2,12 +2,18 @@ import { describe, expect, it, vi } from 'vitest';
 import { Window } from 'happy-dom';
 import { clientScript, installApp } from './app.js';
 
-function setup(html: string, respond: (url: string, init: RequestInit) => { status: number; body?: unknown; bad?: boolean }) {
+function setup(
+  html: string,
+  respond: (url: string, init: RequestInit) => { status: number; body?: unknown; bad?: boolean },
+) {
   const win = new Window({ url: 'http://fake.test/boards/b1' });
   const doc = win.document as unknown as Document;
   doc.body.innerHTML = html;
   const assign = vi.fn();
-  Object.defineProperty(win, 'location', { value: { pathname: '/boards/b1', assign }, configurable: true });
+  Object.defineProperty(win, 'location', {
+    value: { pathname: '/boards/b1', assign },
+    configurable: true,
+  });
   const calls: { url: string; init: RequestInit }[] = [];
   const fetchImpl = (async (url: string, init: RequestInit) => {
     calls.push({ url, init });
@@ -23,7 +29,9 @@ function setup(html: string, respond: (url: string, init: RequestInit) => { stat
   }) as unknown as typeof fetch;
   installApp(doc, win as unknown as globalThis.Window, fetchImpl);
   const submit = async (form: Element) => {
-    form.dispatchEvent(new win.Event('submit', { bubbles: true, cancelable: true }) as unknown as Event);
+    form.dispatchEvent(
+      new win.Event('submit', { bubbles: true, cancelable: true }) as unknown as Event,
+    );
     await new Promise((r) => setTimeout(r, 0));
   };
   return { win, doc, assign, calls, submit };
@@ -40,7 +48,12 @@ describe('fake orqea browser script', () => {
     );
     await submit(doc.querySelector('form')!);
     expect(calls[0]!.url).toBe('/api/lists/l1/cards');
-    expect(JSON.parse(calls[0]!.init.body as string)).toEqual({ title: 'T', acceptedTerms: true, questions: ['Q'], cardIds: ['c1'] });
+    expect(JSON.parse(calls[0]!.init.body as string)).toEqual({
+      title: 'T',
+      acceptedTerms: true,
+      questions: ['Q'],
+      cardIds: ['c1'],
+    });
     expect(assign).toHaveBeenCalledWith('/cards/c9?done=card');
   });
 
@@ -55,7 +68,10 @@ describe('fake orqea browser script', () => {
   });
 
   it('stays on the page without redirect/done, and stores a login token', async () => {
-    const { doc, assign, submit } = setup(`<form data-api="POST /api/auth/login"></form>`, () => ({ status: 200, body: { token: 'tok' } }));
+    const { doc, assign, submit } = setup(`<form data-api="POST /api/auth/login"></form>`, () => ({
+      status: 200,
+      body: { token: 'tok' },
+    }));
     await submit(doc.querySelector('form')!);
     expect(doc.cookie).toContain('orqea_token=tok');
     expect(assign).toHaveBeenCalledWith('/boards/b1');
@@ -63,7 +79,10 @@ describe('fake orqea browser script', () => {
 
   it('shows the server explanation in a role=alert, reusing it on retries', async () => {
     let n = 0;
-    const { doc, submit } = setup(`<form data-api="POST /x"></form>`, () => ({ status: 400, body: n++ ? {} : { message: 'Enter an email' } }));
+    const { doc, submit } = setup(`<form data-api="POST /x"></form>`, () => ({
+      status: 400,
+      body: n++ ? {} : { message: 'Enter an email' },
+    }));
     const form = doc.querySelector('form')!;
     await submit(form);
     expect(form.querySelector('[role="alert"]')!.textContent).toBe('Enter an email');
@@ -116,7 +135,9 @@ describe('fake orqea browser script', () => {
   });
 
   it('consent without a banner in the page is harmless', () => {
-    const { doc } = setup(`<button data-action="consent" data-value="all">ok</button>`, () => ({ status: 200 }));
+    const { doc } = setup(`<button data-action="consent" data-value="all">ok</button>`, () => ({
+      status: 200,
+    }));
     (doc.querySelector('button') as HTMLElement).click();
     expect(doc.cookie).toContain('consent=all');
   });
@@ -127,7 +148,10 @@ describe('fake orqea browser script', () => {
       () => ({ status: 200 }),
     );
     const store = new Map<string, string>();
-    const dt = { setData: (k: string, v: string) => store.set(k, v), getData: (k: string) => store.get(k) ?? '' };
+    const dt = {
+      setData: (k: string, v: string) => store.set(k, v),
+      getData: (k: string) => store.get(k) ?? '',
+    };
     const fire = (type: string, target: Element) => {
       const ev = new win.Event(type, { bubbles: true, cancelable: true }) as unknown as DragEvent;
       Object.defineProperty(ev, 'dataTransfer', { value: dt });
@@ -149,7 +173,7 @@ describe('fake orqea browser script', () => {
   });
 
   it('serves itself as a self-invoking script', () => {
-    expect(clientScript()).toMatch(/^\(function installApp|^\(function/);
-    expect(clientScript()).toContain('(document, window, window.fetch.bind(window))');
+    expect(clientScript()).toContain('function submitForm(');
+    expect(clientScript()).toContain('installApp(document, window, window.fetch.bind(window));');
   });
 });

@@ -5,7 +5,10 @@ describe('scenario', () => {
   it('resolves presets and overrides', () => {
     expect(resolveScenario('improved').cookieBanner).toBe(false);
     expect(resolveScenario({ captcha: true }).captcha).toBe(true);
-    expect(resolveScenario({ preset: 'slow', captcha: true })).toMatchObject({ slowMs: 4000, captcha: true });
+    expect(resolveScenario({ preset: 'slow', captcha: true })).toMatchObject({
+      slowMs: 4000,
+      captcha: true,
+    });
     expect(() => resolveScenario('nope')).toThrow('Unknown scenario preset');
     expect(() => resolveScenario({ bogus: 1 })).toThrow();
   });

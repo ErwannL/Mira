@@ -7,11 +7,18 @@ async function setup(scenario = {}) {
   const u = await f.user();
   const cookie = { cookie: `orqea_token=${u.token}` };
   const board = await f.call('POST', '/api/boards', { name: 'Plan & co' }, u.auth);
-  const lists = (await f.call('GET', `/api/boards/${board.json.id}`, undefined, u.auth)).json.lists as { id: string }[];
-  const card = await f.call('POST', `/api/lists/${lists[0]!.id}/cards`, { title: 'Call <Bob>' }, u.auth);
+  const lists = (await f.call('GET', `/api/boards/${board.json.id}`, undefined, u.auth)).json
+    .lists as { id: string }[];
+  const card = await f.call(
+    'POST',
+    `/api/lists/${lists[0]!.id}/cards`,
+    { title: 'Call <Bob>' },
+    u.auth,
+  );
   await f.call('POST', `/api/cards/${card.json.id}/checklist`, { text: 'item' }, u.auth);
   await f.call('POST', `/api/cards/${card.json.id}/comments`, { text: 'hello' }, u.auth);
-  const page = (url: string, extra: Record<string, string> = {}) => f.call('GET', url, undefined, { ...cookie, ...extra });
+  const page = (url: string, extra: Record<string, string> = {}) =>
+    f.call('GET', url, undefined, { ...cookie, ...extra });
   return { f, u, page, boardId: board.json.id as string, cardId: card.json.id as string };
 }
 
@@ -22,7 +29,10 @@ describe('public pages', () => {
     expect(en.body).toContain('<html lang="en">');
     expect(en.body).toContain('role="dialog" aria-label="Cookies"');
     expect(en.body).toContain('Sign up');
-    const fr = await f.call('GET', '/', undefined, { 'accept-language': 'fr', cookie: 'consent=none' });
+    const fr = await f.call('GET', '/', undefined, {
+      'accept-language': 'fr',
+      cookie: 'consent=none',
+    });
     expect(fr.body).toContain('Créer un compte');
     expect(fr.body).not.toContain('role="dialog"');
     const noBanner = await makeFake({}, { cookieBanner: false });
@@ -36,7 +46,9 @@ describe('public pages', () => {
     expect(real.body).toContain('Last name');
     expect(real.body).not.toContain('Phone number');
     expect(real.body).toContain('I am not a robot');
-    const synthetic = await f.call('GET', '/signup', undefined, { 'x-synthetic-run': signRunHeader('r1', SECRET, NOW) });
+    const synthetic = await f.call('GET', '/signup', undefined, {
+      'x-synthetic-run': signRunHeader('r1', SECRET, NOW),
+    });
     expect(synthetic.body).not.toContain('I am not a robot');
     expect(synthetic.headers['x-captcha-would-show']).toBeUndefined();
   });
@@ -50,7 +62,12 @@ describe('public pages', () => {
 
   it('login, signup done, public form, account deleted, 404 form', async () => {
     const { f, u } = await setup();
-    const form = await f.call('POST', '/api/forms', { title: 'Reg', questions: ['Name?', 'Age?'] }, u.auth);
+    const form = await f.call(
+      'POST',
+      '/api/forms',
+      { title: 'Reg', questions: ['Name?', 'Age?'] },
+      u.auth,
+    );
     expect((await f.call('GET', '/login')).body).toContain('data-api="POST /api/auth/login"');
     expect((await f.call('GET', '/signup/done')).body).toContain('Check your inbox');
     const pub = await f.call('GET', `/f/${form.json.id}?done=answer`);
@@ -92,14 +109,25 @@ describe('app pages', () => {
   it('unknown flash keys and missing objects', async () => {
     const { page, f } = await setup();
     expect((await page('/boards?done=bogus')).body).not.toContain('role="status"');
-    for (const url of ['/boards/none', '/cards/none', '/boards/none/automations', '/boards/none/members']) {
+    for (const url of [
+      '/boards/none',
+      '/cards/none',
+      '/boards/none/automations',
+      '/boards/none/members',
+    ]) {
       expect((await page(url)).status, url).toBe(404);
     }
     const eve = await f.user('eve@example.com');
     const board = await f.call('POST', '/api/boards', { name: 'E' }, eve.auth);
-    const lists = (await f.call('GET', `/api/boards/${board.json.id}`, undefined, eve.auth)).json.lists as { id: string }[];
+    const lists = (await f.call('GET', `/api/boards/${board.json.id}`, undefined, eve.auth)).json
+      .lists as { id: string }[];
     const card = await f.call('POST', `/api/lists/${lists[0]!.id}/cards`, { title: 'x' }, eve.auth);
-    for (const url of [`/boards/${board.json.id}`, `/cards/${card.json.id}`, `/boards/${board.json.id}/automations`, `/boards/${board.json.id}/members`]) {
+    for (const url of [
+      `/boards/${board.json.id}`,
+      `/cards/${card.json.id}`,
+      `/boards/${board.json.id}/automations`,
+      `/boards/${board.json.id}/members`,
+    ]) {
       expect((await page(url)).status, url).toBe(404);
     }
   });

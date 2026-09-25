@@ -4,7 +4,12 @@ import { accessibleNameSchema } from './catalogue-schema.js';
 
 /** Accessible names of cross-cutting UI (cookie banner) — configurable per target. */
 export const commonUiSchema = z
-  .object({ version: z.string(), cookieAccept: accessibleNameSchema, cookieReject: accessibleNameSchema, cookieDialog: accessibleNameSchema })
+  .object({
+    version: z.string(),
+    cookieAccept: accessibleNameSchema,
+    cookieReject: accessibleNameSchema,
+    cookieDialog: accessibleNameSchema,
+  })
   .strict();
 export type CommonUi = z.infer<typeof commonUiSchema>;
 

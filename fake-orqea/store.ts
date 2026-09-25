@@ -14,12 +14,47 @@ export interface User {
   createdAt: number;
   runId: string | null;
 }
-export interface Board { id: string; ownerId: string; name: string; members: string[]; guestLinks: string[]; rules: { name: string; trigger: string; action: string }[] }
-export interface List { id: string; boardId: string; name: string; position: number }
-export interface Card { id: string; listId: string; title: string; description: string; priority: string; checklist: { text: string }[]; comments: { authorId: string; text: string; mentions: string[] }[] }
-export interface Form { id: string; ownerId: string; title: string; questions: string[]; answers: string[][] }
-export interface Note { id: string; ownerId: string; text: string; remindAt: string }
-export interface Qr { id: string; ownerId: string; url: string }
+export interface Board {
+  id: string;
+  ownerId: string;
+  name: string;
+  members: string[];
+  guestLinks: string[];
+  rules: { name: string; trigger: string; action: string }[];
+}
+export interface List {
+  id: string;
+  boardId: string;
+  name: string;
+  position: number;
+}
+export interface Card {
+  id: string;
+  listId: string;
+  title: string;
+  description: string;
+  priority: string;
+  checklist: { text: string }[];
+  comments: { authorId: string; text: string; mentions: string[] }[];
+}
+export interface Form {
+  id: string;
+  ownerId: string;
+  title: string;
+  questions: string[];
+  answers: string[][];
+}
+export interface Note {
+  id: string;
+  ownerId: string;
+  text: string;
+  remindAt: string;
+}
+export interface Qr {
+  id: string;
+  ownerId: string;
+  url: string;
+}
 
 export class Store {
   users = new Map<string, User>();
@@ -57,7 +92,9 @@ export class Store {
   }
 
   listsOf(boardId: string): List[] {
-    return [...this.lists.values()].filter((l) => l.boardId === boardId).sort((a, b) => a.position - b.position);
+    return [...this.lists.values()]
+      .filter((l) => l.boardId === boardId)
+      .sort((a, b) => a.position - b.position);
   }
 
   cardsOf(listId: string): Card[] {
@@ -71,7 +108,15 @@ export class Store {
 
   /** Number of stored rows (all entity kinds) — used by the cleanup report. */
   rowCount(): number {
-    return this.users.size + this.boards.size + this.lists.size + this.cards.size + this.forms.size + this.notes.size + this.qrs.size;
+    return (
+      this.users.size +
+      this.boards.size +
+      this.lists.size +
+      this.cards.size +
+      this.forms.size +
+      this.notes.size +
+      this.qrs.size
+    );
   }
 
   deleteUsers(match: (u: User) => boolean): void {

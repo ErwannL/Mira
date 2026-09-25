@@ -2,7 +2,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { repoFiles } from './lib.mjs';
 
-const TEXT = /\.(ts|mjs|js|json|md|yml|yaml|css|html|svg|sql|txt|sh)$|Dockerfile|\.env\.example|\.gitattributes|\.gitignore$/;
+const TEXT =
+  /\.(ts|mjs|js|json|md|yml|yaml|css|html|svg|sql|txt|sh)$|Dockerfile|\.env\.example|\.gitattributes|\.gitignore$/;
 const SKIP = /^package-lock\.json$/;
 const problems = [];
 for (const file of repoFiles()) {

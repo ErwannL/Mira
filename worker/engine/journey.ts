@@ -3,11 +3,26 @@ import type { Persona } from '../../shared/persona-schema.js';
 import type { Prng } from '../../shared/prng.js';
 import type { FrictionWeights } from '../../shared/weights.js';
 import { decide, type Decision } from '../friction/decide.js';
-import { accumulate, betweenSessions, frictionOf, relieve, type FrictionResult } from '../friction/friction.js';
+import {
+  accumulate,
+  betweenSessions,
+  frictionOf,
+  relieve,
+  type FrictionResult,
+} from '../friction/friction.js';
 import { decideMoney, type MoneyOutcome } from '../friction/money.js';
 import { fixMistakes, pickMistakes } from './mistakes.js';
 import { goalsReached, isCritical, lifeGoals, sessionPlan } from './planner.js';
-import type { Credentials, Driver, JourneyEvent, Memory, Paywall, Recorder, StepOutcome, TargetPort } from './types.js';
+import type {
+  Credentials,
+  Driver,
+  JourneyEvent,
+  Memory,
+  Paywall,
+  Recorder,
+  StepOutcome,
+  TargetPort,
+} from './types.js';
 
 export interface JourneyDeps {
   catalogue: Catalogue;
@@ -70,7 +85,16 @@ export async function runSession(life: Life, sim: Date, deps: JourneyDeps): Prom
   const sessionPrng = life.prng.fork(`session-${memory.sessions}`);
   const goals = lifeGoals(persona, life.prng.fork('goals'));
   const plan = sessionPlan(memory, goals, persona, deps.catalogue, sessionPrng);
-  await deps.recorder.event(baseEvent(life, sim, deps, 'session', null, `session ${memory.sessions}: ${plan.map((u) => u.id).join(' → ')}`));
+  await deps.recorder.event(
+    baseEvent(
+      life,
+      sim,
+      deps,
+      'session',
+      null,
+      `session ${memory.sessions}: ${plan.map((u) => u.id).join(' → ')}`,
+    ),
+  );
   const driver = await deps.openDriver(persona);
   try {
     let budget = persona.sessionLengthMin;
@@ -84,12 +108,21 @@ export async function runSession(life: Life, sim: Date, deps: JourneyDeps): Prom
   }
   if (!isFinal(memory) && goalsReached(memory, goals)) {
     memory.stage = 'done';
-    await deps.recorder.event(baseEvent(life, sim, deps, 'life-end', null, 'all goals reached or consciously skipped'));
+    await deps.recorder.event(
+      baseEvent(life, sim, deps, 'life-end', null, 'all goals reached or consciously skipped'),
+    );
   }
   return memory;
 }
 
-function baseEvent(life: Life, sim: Date, deps: JourneyDeps, kind: JourneyEvent['kind'], useCaseId: string | null, rule: string): JourneyEvent {
+function baseEvent(
+  life: Life,
+  sim: Date,
+  deps: JourneyDeps,
+  kind: JourneyEvent['kind'],
+  useCaseId: string | null,
+  rule: string,
+): JourneyEvent {
   return {
     kind,
     personaId: life.persona.id,
@@ -122,28 +155,59 @@ async function prepareVars(life: Life, useCase: UseCase, deps: JourneyDeps): Pro
   }
 }
 
+/** What a step may type: persona memory plus credentials (never persisted with the memory). */
+function stepVars(life: Life): Record<string, string> {
+  return {
+    ...life.memory.vars,
+    email: life.credentials.email,
+    password: life.credentials.password,
+    locale: life.persona.locale,
+    personaName: life.persona.displayName,
+  };
+}
+
 export function checkoutAllowed(life: Life, deps: JourneyDeps): string | null {
   const converted = life.memory.money.some((m) => m.outcome.decision === 'convert');
   if (!converted) return 'no conversion decision yet';
-  if (!deps.allowCheckout) return 'conversion recorded only (test-mode checkout not enabled for this run)';
+  if (!deps.allowCheckout)
+    return 'conversion recorded only (test-mode checkout not enabled for this run)';
   return null;
 }
 
-async function attemptUseCase(life: Life, useCase: UseCase, sim: Date, driver: Driver, deps: JourneyDeps, prng: Prng): Promise<void> {
+async function attemptUseCase(
+  life: Life,
+  useCase: UseCase,
+  sim: Date,
+  driver: Driver,
+  deps: JourneyDeps,
+  prng: Prng,
+): Promise<void> {
   const { memory, persona } = life;
   const missing = useCase.requires.find((r) => !memory.succeeded.includes(r));
-  const blocked = missing ? `prerequisite ${missing} not met` : useCase.id === 'billing-checkout' ? checkoutAllowed(life, deps) : null;
+  const blocked = missing
+    ? `prerequisite ${missing} not met`
+    : useCase.id === 'billing-checkout'
+      ? checkoutAllowed(life, deps)
+      : null;
   if (blocked) {
     if (!missing) addOnce(memory.skipped, useCase.id);
-    await deps.recorder.event({ ...baseEvent(life, sim, deps, 'step', useCase.id, `skipped: ${blocked}`), action: 'skip' });
+    await deps.recorder.event({
+      ...baseEvent(life, sim, deps, 'step', useCase.id, `skipped: ${blocked}`),
+      action: 'skip',
+    });
     return;
   }
   addOnce(memory.attempted, useCase.id);
   let mistakes = pickMistakes(useCase, persona, prng);
   for (let attempt = 1; ; attempt++) {
     await prepareVars(life, useCase, deps);
-    const vars = { ...memory.vars, email: life.credentials.email, password: life.credentials.password, locale: persona.locale, personaName: persona.displayName };
-    const outcome = await driver.attempt(useCase, { persona, vars, mistakes, label: `${persona.id}-s${memory.sessions}-${useCase.id}-${attempt}` });
+    const vars = stepVars(life);
+    const outcome = await driver.attempt(useCase, {
+      persona,
+      vars,
+      mistakes,
+      label: `${persona.id}-s${memory.sessions}-${useCase.id}-${attempt}`,
+    });
     Object.assign(memory.vars, outcome.captured);
     outcome.pages.forEach((p) => addOnce(memory.pagesSeen, p));
     const friction = frictionOf(outcome.facts, persona, deps.weights, {
@@ -152,8 +216,18 @@ async function attemptUseCase(life: Life, useCase: UseCase, sim: Date, driver: D
     });
     memory.frustration = accumulate(memory.frustration, friction.score, deps.weights);
     memory.frustrationHistory.push({ sim: sim.toISOString(), value: memory.frustration });
-    if (!outcome.ok) memory.errorsMet.push({ useCase: useCase.id, code: outcome.error ?? 'failed' });
-    const { decision, money } = await decideStep(life, useCase, outcome, friction, attempt, sim, deps, prng);
+    if (!outcome.ok)
+      memory.errorsMet.push({ useCase: useCase.id, code: outcome.error ?? 'failed' });
+    const { decision, money } = await decideStep(
+      life,
+      useCase,
+      outcome,
+      friction,
+      attempt,
+      sim,
+      deps,
+      prng,
+    );
     await deps.recorder.event({
       ...baseEvent(life, sim, deps, 'step', useCase.id, decision.rule),
       attempt,
@@ -187,10 +261,18 @@ async function decideStep(
   prng: Prng,
 ): Promise<{ decision: Decision; money: MoneyOutcome | null }> {
   const { memory, persona } = life;
-  const input = { frustration: memory.frustration, friction, attempts, critical: isCritical(useCase) };
+  const input = {
+    frustration: memory.frustration,
+    friction,
+    attempts,
+    critical: isCritical(useCase),
+  };
   const isPricingPage = useCase.id === 'billing-view-plans' && outcome.ok;
   if (!outcome.paywall && !isPricingPage) {
-    return { decision: decide({ ...input, stepFailed: !outcome.ok }, persona, deps.weights, prng), money: null };
+    return {
+      decision: decide({ ...input, stepFailed: !outcome.ok }, persona, deps.weights, prng),
+      money: null,
+    };
   }
   const encounter = {
     featureKey: outcome.paywall?.featureKey ?? null,
@@ -202,15 +284,29 @@ async function decideStep(
   memory.money.push({ sim: sim.toISOString(), encounter, outcome: money });
   if (money.decision === 'convert') {
     memory.vars.planKey = money.planKey as string;
-    memory.vars.planName = memory.vars.planKey.charAt(0).toUpperCase() + memory.vars.planKey.slice(1);
+    memory.vars.planName =
+      memory.vars.planKey.charAt(0).toUpperCase() + memory.vars.planKey.slice(1);
   }
-  if (money.decision === 'churn') return { decision: { action: 'abandon', rule: `paywall churn: ${money.rule}` }, money };
+  if (money.decision === 'churn')
+    return { decision: { action: 'abandon', rule: `paywall churn: ${money.rule}` }, money };
   const d = decide({ ...input, stepFailed: false }, persona, deps.weights, prng);
   if (d.action === 'abandon' || isPricingPage) return { decision: d, money };
-  return { decision: { action: 'skip', rule: `paywall ${(outcome.paywall as Paywall).code}: ${money.rule}` }, money };
+  return {
+    decision: {
+      action: 'skip',
+      rule: `paywall ${(outcome.paywall as Paywall).code}: ${money.rule}`,
+    },
+    money,
+  };
 }
 
-function applyDecision(life: Life, useCase: UseCase, decision: Decision, money: MoneyOutcome | null, deps: JourneyDeps): void {
+function applyDecision(
+  life: Life,
+  useCase: UseCase,
+  decision: Decision,
+  money: MoneyOutcome | null,
+  deps: JourneyDeps,
+): void {
   const { memory } = life;
   if (decision.action === 'continue') {
     addOnce(memory.succeeded, useCase.id);

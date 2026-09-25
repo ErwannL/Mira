@@ -5,10 +5,7 @@
     "fr": "Mentionner un coéquipier"
   },
   "area": "collaboration",
-  "requires": [
-    "comment",
-    "invite-member"
-  ],
+  "requires": ["comment", "invite-member"],
   "planGate": "free",
   "minutes": 1,
   "ui": [
@@ -78,9 +75,7 @@
         "text": "@{{inviteEmail}} can you check?"
       },
       "auth": true,
-      "expectStatus": [
-        201
-      ]
+      "expectStatus": [201]
     }
   ],
   "success": {

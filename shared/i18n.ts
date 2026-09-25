@@ -48,7 +48,8 @@ export const en = {
   'form.minutesPerRound': 'Minutes per round',
   'form.targetUsers': 'Target users (volume mode)',
   'form.scenario': 'Fake Orqea scenario (optional)',
-  'form.allowCheckout': 'Run a real test-mode checkout (only if the target reports Stripe test mode)',
+  'form.allowCheckout':
+    'Run a real test-mode checkout (only if the target reports Stripe test mode)',
   'form.priceScenarios': 'Price scenarios (JSON, optional)',
   'form.submit': 'Queue the run',
   'form.invalid': 'Please check the form: {detail}',
@@ -185,7 +186,8 @@ export const fr: Record<I18nKey, string> = {
   'form.minutesPerRound': 'Minutes par tour',
   'form.targetUsers': 'Utilisateurs cibles (mode volume)',
   'form.scenario': 'Scénario du faux Orqea (facultatif)',
-  'form.allowCheckout': 'Faire un vrai paiement en mode test (seulement si la cible est en mode test Stripe)',
+  'form.allowCheckout':
+    'Faire un vrai paiement en mode test (seulement si la cible est en mode test Stripe)',
   'form.priceScenarios': 'Scénarios de prix (JSON, facultatif)',
   'form.submit': 'Mettre en file',
   'form.invalid': 'Vérifiez le formulaire : {detail}',
@@ -273,7 +275,11 @@ export const fr: Record<I18nKey, string> = {
 
 export type Locale = 'en' | 'fr';
 
-export function translate(locale: Locale, key: I18nKey, params: Record<string, string | number> = {}): string {
+export function translate(
+  locale: Locale,
+  key: I18nKey,
+  params: Record<string, string | number> = {},
+): string {
   const dict = locale === 'fr' ? fr : en;
   return dict[key].replace(/\{(\w+)\}/g, (m, k: string) => (k in params ? String(params[k]) : m));
 }

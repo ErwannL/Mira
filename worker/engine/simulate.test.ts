@@ -3,8 +3,21 @@ import { persona, timeConfig } from '../../shared/test-helpers/fixtures.js';
 import { journeyDeps, MemStore, ScriptedDriver } from '../test-helpers/scripted.js';
 import { simulate, type SimulationDeps } from './simulate.js';
 
-const busy = { ...persona('project-manager'), sessionsPerWeek: 1000, errorProneness: 0, curiosity: 0, sessionLengthMin: 6 };
-const plan = { seed: 11, personas: [busy], start: new Date('2030-01-07T07:00:00Z'), totalSimulatedDays: 2, minutesPerRound: 60, timeConfig };
+const busy = {
+  ...persona('project-manager'),
+  sessionsPerWeek: 1000,
+  errorProneness: 0,
+  curiosity: 0,
+  sessionLengthMin: 6,
+};
+const plan = {
+  seed: 11,
+  personas: [busy],
+  start: new Date('2030-01-07T07:00:00Z'),
+  totalSimulatedDays: 2,
+  minutesPerRound: 60,
+  timeConfig,
+};
 
 function deps(overrides: Partial<SimulationDeps> = {}) {
   const driver = new ScriptedDriver();
@@ -34,13 +47,23 @@ describe('simulate', () => {
     const b = deps();
     await simulate(plan, a.d);
     await simulate(plan, b.d);
-    const strip = (e: { useCaseId: string | null; action: string | null; rule: string; simTime: string }) => [e.useCaseId, e.action, e.rule, e.simTime];
+    const strip = (e: {
+      useCaseId: string | null;
+      action: string | null;
+      rule: string;
+      simTime: string;
+    }) => [e.useCaseId, e.action, e.rule, e.simTime];
     expect(a.events.map(strip)).toEqual(b.events.map(strip));
   });
   it('resumes a stored life (credentials kept)', async () => {
     const first = deps();
     await simulate({ ...plan, totalSimulatedDays: 0.05 }, first.d);
-    const again = deps({ memoryStore: first.store, newCredentials: () => { throw new Error('must reuse'); } });
+    const again = deps({
+      memoryStore: first.store,
+      newCredentials: () => {
+        throw new Error('must reuse');
+      },
+    });
     const s = await simulate(plan, again.d);
     expect(s.stages[busy.id]).toBe('done');
   });

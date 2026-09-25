@@ -6,7 +6,14 @@ import type { Endpoint } from '../target/client.js';
 import type { ReportMeta } from './meta.js';
 import { countBy, median, round4, top } from './stats.js';
 
-export const HEADLINE = ['landing', 'signup', 'verify-email', 'login', 'create-board', 'create-card'];
+export const HEADLINE = [
+  'landing',
+  'signup',
+  'verify-email',
+  'login',
+  'create-board',
+  'create-card',
+];
 
 export interface PersonaCell {
   attempted: boolean;
@@ -35,13 +42,31 @@ export interface FunnelReport {
   meta: ReportMeta;
   headline: { id: string; personas: number; weightedShare: number }[];
   useCases: UseCaseRow[];
-  personas: { id: string; stage: string; sessions: number; frustration: number; succeeded: string[]; abandonedAt: string | null; lastRule: string | null; money: string[] }[];
-  coverage: { useCasesNeverAttempted: string[]; endpointsNeverCalled: string[]; pagesSeen: string[] };
+  personas: {
+    id: string;
+    stage: string;
+    sessions: number;
+    frustration: number;
+    succeeded: string[];
+    abandonedAt: string | null;
+    lastRule: string | null;
+    money: string[];
+  }[];
+  coverage: {
+    useCasesNeverAttempted: string[];
+    endpointsNeverCalled: string[];
+    pagesSeen: string[];
+  };
 }
 
-const steps = (events: JourneyEvent[]) => events.filter((e) => e.kind === 'step' && e.useCaseId !== null);
+const steps = (events: JourneyEvent[]) =>
+  events.filter((e) => e.kind === 'step' && e.useCaseId !== null);
 
-function cell(stepEvents: JourneyEvent[], memory: Memory | undefined, useCaseId: string): PersonaCell {
+function cell(
+  stepEvents: JourneyEvent[],
+  memory: Memory | undefined,
+  useCaseId: string,
+): PersonaCell {
   const tried = stepEvents.filter((e) => e.facts !== null);
   const abandonedHere = tried.find((e) => e.action === 'abandon');
   return {
@@ -55,31 +80,12 @@ function cell(stepEvents: JourneyEvent[], memory: Memory | undefined, useCaseId:
   };
 }
 
-export function buildFunnel(meta: ReportMeta, catalogue: Catalogue, personas: Persona[], events: JourneyEvent[], memories: Memory[], endpoints: Endpoint[]): FunnelReport {
-  const memo = new Map(memories.map((m) => [m.personaId, m]));
-  const all = steps(events);
-  const useCases: UseCaseRow[] = catalogue.useCases.map((u) => {
-    const mine = all.filter((e) => e.useCaseId === u.id);
-    const cells = Object.fromEntries(personas.map((p) => [p.id, cell(mine.filter((e) => e.personaId === p.id), memo.get(p.id), u.id)]));
-    const abandons = mine.filter((e) => e.action === 'abandon');
-    const reasons = abandons.map((e) => e.friction?.reasons[0]?.code ?? e.rule.split(':')[0] as string);
-    return {
-      id: u.id,
-      title: u.title,
-      attempted: Object.values(cells).filter((c) => c.attempted).length,
-      succeeded: Object.values(cells).filter((c) => c.succeeded).length,
-      abandoned: abandons.length,
-      medianFriction: median(mine.filter((e) => e.friction).map((e) => (e.friction as { score: number }).score)),
-      topAbandonReasons: top(countBy(reasons, (r) => r), 3),
-      abandonScreenshot: abandons.find((e) => e.screenshot)?.screenshot ?? null,
-      personas: cells,
-    };
-  });
-  const headline = HEADLINE.map((id) => {
-    const reached = personas.filter((p) => memo.get(p.id)?.succeeded.includes(id));
-    return { id, personas: reached.length, weightedShare: round4(reached.reduce((s, p) => s + p.populationWeight, 0)) };
-  });
-  const personaRows = personas.map((p) => {
+function personaSummaries(
+  personas: Persona[],
+  memo: Map<string, Memory>,
+  all: JourneyEvent[],
+): FunnelReport['personas'] {
+  return personas.map((p) => {
     const m = memo.get(p.id);
     const mine = all.filter((e) => e.personaId === p.id);
     const abandon = mine.find((e) => e.action === 'abandon');
@@ -91,9 +97,65 @@ export function buildFunnel(meta: ReportMeta, catalogue: Catalogue, personas: Pe
       succeeded: m?.succeeded ?? [],
       abandonedAt: abandon?.useCaseId ?? null,
       lastRule: mine.at(-1)?.rule ?? null,
-      money: (m?.money ?? []).map((x) => `${x.encounter.featureKey ?? 'pricing-page'}: ${x.outcome.decision}`),
+      money: (m?.money ?? []).map(
+        (x) => `${x.encounter.featureKey ?? 'pricing-page'}: ${x.outcome.decision}`,
+      ),
     };
   });
+}
+
+export function buildFunnel(
+  meta: ReportMeta,
+  catalogue: Catalogue,
+  personas: Persona[],
+  events: JourneyEvent[],
+  memories: Memory[],
+  endpoints: Endpoint[],
+): FunnelReport {
+  const memo = new Map(memories.map((m) => [m.personaId, m]));
+  const all = steps(events);
+  const useCases: UseCaseRow[] = catalogue.useCases.map((u) => {
+    const mine = all.filter((e) => e.useCaseId === u.id);
+    const cells = Object.fromEntries(
+      personas.map((p) => [
+        p.id,
+        cell(
+          mine.filter((e) => e.personaId === p.id),
+          memo.get(p.id),
+          u.id,
+        ),
+      ]),
+    );
+    const abandons = mine.filter((e) => e.action === 'abandon');
+    const reasons = abandons.map(
+      (e) => e.friction?.reasons[0]?.code ?? (e.rule.split(':')[0] as string),
+    );
+    return {
+      id: u.id,
+      title: u.title,
+      attempted: Object.values(cells).filter((c) => c.attempted).length,
+      succeeded: Object.values(cells).filter((c) => c.succeeded).length,
+      abandoned: abandons.length,
+      medianFriction: median(
+        mine.filter((e) => e.friction).map((e) => (e.friction as { score: number }).score),
+      ),
+      topAbandonReasons: top(
+        countBy(reasons, (r) => r),
+        3,
+      ),
+      abandonScreenshot: abandons.find((e) => e.screenshot)?.screenshot ?? null,
+      personas: cells,
+    };
+  });
+  const headline = HEADLINE.map((id) => {
+    const reached = personas.filter((p) => memo.get(p.id)?.succeeded.includes(id));
+    return {
+      id,
+      personas: reached.length,
+      weightedShare: round4(reached.reduce((s, p) => s + p.populationWeight, 0)),
+    };
+  });
+  const personaRows = personaSummaries(personas, memo, all);
   const called = new Set(events.flatMap((e) => e.apiCalls.map((c) => key(c.method, c.path))));
   return {
     type: 'funnel',
@@ -103,7 +165,9 @@ export function buildFunnel(meta: ReportMeta, catalogue: Catalogue, personas: Pe
     personas: personaRows,
     coverage: {
       useCasesNeverAttempted: useCases.filter((u) => u.attempted === 0).map((u) => u.id),
-      endpointsNeverCalled: [...new Set(endpoints.map((e) => key(e.method, e.path)))].filter((k) => !called.has(k) && !k.includes('/api/admin/') && k !== 'GET /api').sort(),
+      endpointsNeverCalled: [...new Set(endpoints.map((e) => key(e.method, e.path)))]
+        .filter((k) => !called.has(k) && !k.includes('/api/admin/') && k !== 'GET /api')
+        .sort(),
       pagesSeen: [...new Set(memories.flatMap((m) => m.pagesSeen))].sort(),
     },
   };

@@ -14,7 +14,13 @@ afterEach(async () => {
 describe('fake orqea start', () => {
   it('reads defaults from the environment', () => {
     const c = fakeConfigFromEnv(env);
-    expect(c.config).toMatchObject({ env: 'development', stripeMode: 'test', syntheticEnabled: true, adminAllowed: [], appId: 'figura' });
+    expect(c.config).toMatchObject({
+      env: 'development',
+      stripeMode: 'test',
+      syntheticEnabled: true,
+      adminAllowed: [],
+      appId: 'figura',
+    });
     expect(c.port).toBe(4100);
     expect(c.host).toBe('127.0.0.1');
     expect(c.scenario.cookieBanner).toBe(true);
@@ -24,16 +30,39 @@ describe('fake orqea start', () => {
     const file = join(mkdtempSync(join(tmpdir(), 'sc-')), 's.json');
     writeFileSync(file, JSON.stringify({ preset: 'slow', captcha: true }));
     const c = fakeConfigFromEnv({
-      ...env, FAKE_ENV: 'staging', FAKE_STRIPE_MODE: 'off', FAKE_SYNTHETIC_ENABLED: 'false', FAKE_ADMIN_ALLOWED: '172.18., 10.0.',
-      FAKE_VERSION: 'v2', FAKE_CONSOLE_APP_URL: 'http://a', FIGURA_APP_ID: 'x', FAKE_PORT: '1', FAKE_HOST: '0.0.0.0', FAKE_SCENARIO_FILE: file,
+      ...env,
+      FAKE_ENV: 'staging',
+      FAKE_STRIPE_MODE: 'off',
+      FAKE_SYNTHETIC_ENABLED: 'false',
+      FAKE_ADMIN_ALLOWED: '172.18., 10.0.',
+      FAKE_VERSION: 'v2',
+      FAKE_CONSOLE_APP_URL: 'http://a',
+      FIGURA_APP_ID: 'x',
+      FAKE_PORT: '1',
+      FAKE_HOST: '0.0.0.0',
+      FAKE_SCENARIO_FILE: file,
     });
-    expect(c.config).toMatchObject({ env: 'staging', stripeMode: 'off', syntheticEnabled: false, adminAllowed: ['172.18.', '10.0.'], version: 'v2', appUrl: 'http://a', appId: 'x' });
+    expect(c.config).toMatchObject({
+      env: 'staging',
+      stripeMode: 'off',
+      syntheticEnabled: false,
+      adminAllowed: ['172.18.', '10.0.'],
+      version: 'v2',
+      appUrl: 'http://a',
+      appId: 'x',
+    });
     expect(c.scenario).toMatchObject({ slowMs: 4000, captcha: true });
-    expect(fakeConfigFromEnv({ ...env, FAKE_SCENARIO: 'improved' }).scenario.cookieBanner).toBe(false);
+    expect(fakeConfigFromEnv({ ...env, FAKE_SCENARIO: 'improved' }).scenario.cookieBanner).toBe(
+      false,
+    );
   });
   it('rejects short secrets and bad stripe modes', () => {
-    expect(() => fakeConfigFromEnv({ ...env, SYNTHETIC_SERVICE_SECRET: 'short' })).toThrow('SYNTHETIC_SERVICE_SECRET');
-    expect(() => fakeConfigFromEnv({ ...env, FAKE_STRIPE_MODE: 'maybe' })).toThrow('FAKE_STRIPE_MODE');
+    expect(() => fakeConfigFromEnv({ ...env, SYNTHETIC_SERVICE_SECRET: 'short' })).toThrow(
+      'SYNTHETIC_SERVICE_SECRET',
+    );
+    expect(() => fakeConfigFromEnv({ ...env, FAKE_STRIPE_MODE: 'maybe' })).toThrow(
+      'FAKE_STRIPE_MODE',
+    );
     expect(() => fakeConfigFromEnv({})).toThrow('SYNTHETIC_SERVICE_SECRET');
   });
   it('listens', async () => {

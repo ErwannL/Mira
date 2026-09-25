@@ -5,9 +5,7 @@
     "fr": "Actions groupées"
   },
   "area": "cards",
-  "requires": [
-    "create-card"
-  ],
+  "requires": ["create-card"],
   "planGate": "bulk",
   "minutes": 2,
   "ui": [
@@ -72,9 +70,7 @@
       "method": "POST",
       "path": "/api/cards/bulk",
       "body": {
-        "cardIds": [
-          "{{cardId}}"
-        ],
+        "cardIds": ["{{cardId}}"],
         "action": "priority",
         "value": "high"
       },

@@ -5,9 +5,7 @@
     "fr": "Créer une liste"
   },
   "area": "boards",
-  "requires": [
-    "create-board"
-  ],
+  "requires": ["create-board"],
   "planGate": "free",
   "minutes": 1,
   "ui": [
@@ -69,9 +67,7 @@
       "save": {
         "listId": "id"
       },
-      "expectStatus": [
-        201
-      ]
+      "expectStatus": [201]
     }
   ],
   "success": {

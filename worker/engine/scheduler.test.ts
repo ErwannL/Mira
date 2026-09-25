@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { createPrng } from '../../shared/prng.js';
 import { persona, timeConfig } from '../../shared/test-helpers/fixtures.js';
-import { activationProbability, hourMultiplier, isActive, localHour, roundTimes } from './scheduler.js';
+import {
+  activationProbability,
+  hourMultiplier,
+  isActive,
+  localHour,
+  roundTimes,
+} from './scheduler.js';
 
 const pm = persona('project-manager'); // Europe/Berlin
 
@@ -22,7 +28,14 @@ describe('scheduler', () => {
     const inside = activationProbability(pm, new Date('2026-01-05T08:00:00Z'), 60, timeConfig);
     const outside = activationProbability(pm, new Date('2026-01-05T01:00:00Z'), 60, timeConfig);
     expect(inside).toBeGreaterThan(outside * 10);
-    expect(activationProbability({ ...pm, sessionsPerWeek: 1000 }, new Date('2026-01-05T08:00:00Z'), 60, timeConfig)).toBe(1);
+    expect(
+      activationProbability(
+        { ...pm, sessionsPerWeek: 1000 },
+        new Date('2026-01-05T08:00:00Z'),
+        60,
+        timeConfig,
+      ),
+    ).toBe(1);
   });
   it('expected weekly sessions track sessionsPerWeek', () => {
     const times = roundTimes(new Date('2026-01-05T00:00:00Z'), 7, 60);
@@ -35,8 +48,12 @@ describe('scheduler', () => {
     const a = isActive(pm, at, 60, timeConfig, createPrng(5));
     expect(a).toEqual(isActive(pm, at, 60, timeConfig, createPrng(5)));
     expect(a.localHour).toBe(9);
-    expect(isActive({ ...pm, sessionsPerWeek: 1000 }, at, 60, timeConfig, createPrng(5)).active).toBe(true);
-    expect(isActive({ ...pm, sessionsPerWeek: 0 }, at, 60, timeConfig, createPrng(5)).active).toBe(false);
+    expect(
+      isActive({ ...pm, sessionsPerWeek: 1000 }, at, 60, timeConfig, createPrng(5)).active,
+    ).toBe(true);
+    expect(isActive({ ...pm, sessionsPerWeek: 0 }, at, 60, timeConfig, createPrng(5)).active).toBe(
+      false,
+    );
   });
   it('lists round instants', () => {
     const t = roundTimes(new Date('2026-01-05T00:00:00Z'), 1, 30);

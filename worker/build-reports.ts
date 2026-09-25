@@ -15,7 +15,14 @@ import type { Endpoint, TargetInfo } from './target/client.js';
 export const REPORT_KINDS = { journey: ['funnel', 'load', 'pricing'], volume: ['load'] } as const;
 
 /** reporting: deterministic reports from persisted events and memories. */
-export async function buildReports(db: Db, run: RunRow, data: SimData, target: { info: TargetInfo; endpoints: Endpoint[] }, plans: Plan[], durationMs: number): Promise<void> {
+export async function buildReports(
+  db: Db,
+  run: RunRow,
+  data: SimData,
+  target: { info: TargetInfo; endpoints: Endpoint[] },
+  plans: Plan[],
+  durationMs: number,
+): Promise<void> {
   const c = run.config;
   const personas = selectPersonas(data.personas, c.personaIds);
   const events = await eventsOf(db, run.id);
@@ -33,9 +40,24 @@ export async function buildReports(db: Db, run: RunRow, data: SimData, target: {
     },
     personas,
   );
-  await saveReport(db, run.id, 'load', buildLoad(meta, personas, events, data.time, c.userScenarios));
+  await saveReport(
+    db,
+    run.id,
+    'load',
+    buildLoad(meta, personas, events, data.time, c.userScenarios),
+  );
   if (c.kind === 'volume') return;
   const memories = await memoriesOf(db, run.id);
-  await saveReport(db, run.id, 'funnel', buildFunnel(meta, data.catalogue, personas, events, memories, target.endpoints));
-  await saveReport(db, run.id, 'pricing', buildPricing(meta, personas, memories, plans, c.priceScenarios));
+  await saveReport(
+    db,
+    run.id,
+    'funnel',
+    buildFunnel(meta, data.catalogue, personas, events, memories, target.endpoints),
+  );
+  await saveReport(
+    db,
+    run.id,
+    'pricing',
+    buildPricing(meta, personas, memories, plans, c.priceScenarios),
+  );
 }

@@ -5,9 +5,7 @@
     "fr": "Note avec rappel"
   },
   "area": "planning",
-  "requires": [
-    "login"
-  ],
+  "requires": ["login"],
   "planGate": "free",
   "minutes": 2,
   "ui": [
@@ -67,9 +65,7 @@
         "remindAt": "2030-01-15T09:00:00Z"
       },
       "auth": true,
-      "expectStatus": [
-        201
-      ]
+      "expectStatus": [201]
     }
   ],
   "success": {

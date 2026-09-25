@@ -25,7 +25,9 @@ describe('planner', () => {
     expect(first).toEqual(['landing', 'signup', 'verify-email', 'login', 'create-board']);
     m.succeeded.push('landing', 'signup', 'verify-email', 'login');
     m.skipped.push('create-board');
-    expect(sessionPlan(m, ['create-board'], p, catalogue, never).map((u) => u.id)).toEqual(['login']);
+    expect(sessionPlan(m, ['create-board'], p, catalogue, never).map((u) => u.id)).toEqual([
+      'login',
+    ]);
   });
   it('curiosity adds one explorable use case whose prerequisites are met, never destructive ones', () => {
     const p = persona('student');

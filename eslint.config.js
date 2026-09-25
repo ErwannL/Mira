@@ -13,7 +13,7 @@ export default tseslint.config(
       'max-lines': ['error', { max: 1000 }],
       'max-lines-per-function': ['error', { max: 80, skipBlankLines: false, skipComments: false }],
       'no-console': ['error', { allow: ['error', 'warn', 'info'] }],
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
   },
   {

@@ -5,9 +5,7 @@
     "fr": "Créer une carte"
   },
   "area": "cards",
-  "requires": [
-    "create-board"
-  ],
+  "requires": ["create-board"],
   "planGate": "free",
   "minutes": 1,
   "ui": [
@@ -78,9 +76,7 @@
       "save": {
         "cardId": "id"
       },
-      "expectStatus": [
-        201
-      ]
+      "expectStatus": [201]
     }
   ],
   "success": {

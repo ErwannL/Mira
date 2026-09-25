@@ -5,9 +5,7 @@
     "fr": "Règle d'automatisation"
   },
   "area": "automation",
-  "requires": [
-    "create-board"
-  ],
+  "requires": ["create-board"],
   "planGate": "automation",
   "minutes": 3,
   "ui": [
@@ -100,9 +98,7 @@
         "action": "archive"
       },
       "auth": true,
-      "expectStatus": [
-        201
-      ]
+      "expectStatus": [201]
     }
   ],
   "success": {

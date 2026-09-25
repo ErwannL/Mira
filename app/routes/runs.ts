@@ -9,7 +9,16 @@ import type { AppConfig } from '../config.js';
 import type { Db } from '../db/pool.js';
 import { eventsOf } from '../db/events.js';
 import { audit } from '../db/misc.js';
-import { createRun, deleteRun, getRun, listRuns, requestCancel, transition, transitionsOf, type RunRow } from '../db/runs.js';
+import {
+  createRun,
+  deleteRun,
+  getRun,
+  listRuns,
+  requestCancel,
+  transition,
+  transitionsOf,
+  type RunRow,
+} from '../db/runs.js';
 
 /** What the UI sees of a run (no internal columns). */
 export function publicRun(r: RunRow) {
@@ -36,28 +45,63 @@ export function publicRun(r: RunRow) {
 }
 
 export function runRoutes(app: FastifyInstance, cfg: AppConfig, db: Db, data: SimData): void {
+  runRoutes1(app, cfg, db, data);
+  runRoutes2(app, cfg, db);
+}
+
+function runRoutes1(app: FastifyInstance, cfg: AppConfig, db: Db, data: SimData): void {
   app.get('/api/me', async (req) => ({ operator: req.operator }));
 
   app.get('/api/meta', async () => ({
-    personas: data.personas.map((p) => ({ id: p.id, displayName: p.displayName, locale: p.locale, device: p.device, goal: p.goal, weight: p.populationWeight })),
-    catalogue: { version: data.catalogue.version, useCases: data.catalogue.useCases.map((u) => ({ id: u.id, title: u.title, planGate: u.planGate })) },
+    personas: data.personas.map((p) => ({
+      id: p.id,
+      displayName: p.displayName,
+      locale: p.locale,
+      device: p.device,
+      goal: p.goal,
+      weight: p.populationWeight,
+    })),
+    catalogue: {
+      version: data.catalogue.version,
+      useCases: data.catalogue.useCases.map((u) => ({
+        id: u.id,
+        title: u.title,
+        planGate: u.planGate,
+      })),
+    },
     weightsVersion: data.weights.version,
     scenarios: Object.keys(PRESETS),
   }));
 
-  app.get('/api/runs', async () => ({ runs: (await listRuns(db, cfg.maxRunsListed)).map(publicRun) }));
+  app.get('/api/runs', async () => ({
+    runs: (await listRuns(db, cfg.maxRunsListed)).map(publicRun),
+  }));
 
   app.post('/api/runs', async (req, reply) => {
-    const parsed = runConfigSchema.safeParse((req.body as { config?: unknown } | undefined)?.config);
-    if (!parsed.success) return reply.code(400).send({ error: 'INVALID_CONFIG', issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`) });
+    const parsed = runConfigSchema.safeParse(
+      (req.body as { config?: unknown } | undefined)?.config,
+    );
+    if (!parsed.success)
+      return reply.code(400).send({
+        error: 'INVALID_CONFIG',
+        issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`),
+      });
     const config: RunConfig = parsed.data;
     const unknown = config.personaIds.filter((id) => !data.personas.some((p) => p.id === id));
-    if (unknown.length) return reply.code(400).send({ error: 'INVALID_CONFIG', issues: [`personaIds: unknown ${unknown.join(', ')}`] });
+    if (unknown.length)
+      return reply
+        .code(400)
+        .send({ error: 'INVALID_CONFIG', issues: [`personaIds: unknown ${unknown.join(', ')}`] });
     const seed = config.seed ?? randomInt(0, 2 ** 31);
     const id = base36Id();
     await createRun(db, id, config, seed, req.operator);
     const run = await transition(db, id, 'queued', req.operator, 'queued from UI');
-    await audit(db, req.operator, 'run.create', { id, kind: config.kind, target: config.targetUrl, seed });
+    await audit(db, req.operator, 'run.create', {
+      id,
+      kind: config.kind,
+      target: config.targetUrl,
+      seed,
+    });
     return reply.code(201).send({ run: publicRun(run) });
   });
 
@@ -66,7 +110,9 @@ export function runRoutes(app: FastifyInstance, cfg: AppConfig, db: Db, data: Si
     if (!run) return reply.code(404).send({ error: 'NOT_FOUND' });
     return { run: publicRun(run), transitions: await transitionsOf(db, run.id) };
   });
+}
 
+function runRoutes2(app: FastifyInstance, cfg: AppConfig, db: Db): void {
   app.post('/api/runs/:id/cancel', async (req, reply) => {
     const id = (req.params as { id: string }).id;
     const run = await requestCancel(db, id, req.operator);

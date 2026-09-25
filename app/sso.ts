@@ -1,9 +1,21 @@
 import { SSO_ISSUER, SSO_TTL_S, verifyJwtSignature } from '../shared/jwt.js';
 
-export type SsoError = 'MALFORMED' | 'BAD_ALG' | 'BAD_SIGNATURE' | 'BAD_ISSUER' | 'BAD_AUDIENCE' | 'EXPIRED' | 'BAD_LIFETIME' | 'NO_OPERATOR' | 'REUSED';
+export type SsoError =
+  | 'MALFORMED'
+  | 'BAD_ALG'
+  | 'BAD_SIGNATURE'
+  | 'BAD_ISSUER'
+  | 'BAD_AUDIENCE'
+  | 'EXPIRED'
+  | 'BAD_LIFETIME'
+  | 'NO_OPERATOR'
+  | 'REUSED';
 
 /** Verifies an admin-console SSO token: HS256 signature, iss, aud, exp (≤ 60 s lifetime). */
-export function verifySsoToken(token: string, o: { secret: string; appId: string; nowS: number }): { operator: string; exp: number } | { error: SsoError } {
+export function verifySsoToken(
+  token: string,
+  o: { secret: string; appId: string; nowS: number },
+): { operator: string; exp: number } | { error: SsoError } {
   const r = verifyJwtSignature(token, o.secret);
   if ('error' in r) return r;
   const { iss, aud, exp, iat, operator } = r.payload;

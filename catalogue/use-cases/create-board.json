@@ -5,9 +5,7 @@
     "fr": "Créer un tableau"
   },
   "area": "boards",
-  "requires": [
-    "login"
-  ],
+  "requires": ["login"],
   "planGate": "free",
   "minutes": 2,
   "ui": [
@@ -58,9 +56,7 @@
       "save": {
         "boardId": "id"
       },
-      "expectStatus": [
-        201
-      ]
+      "expectStatus": [201]
     }
   ],
   "success": {

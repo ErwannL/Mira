@@ -1,6 +1,7 @@
 import type { Persona } from '../../shared/persona-schema.js';
 
-export const DISCLAIMER = (n: number): string => `Simulation of ${n} modelled personas, not a measurement of real users.`;
+export const DISCLAIMER = (n: number): string =>
+  `Simulation of ${n} modelled personas, not a measurement of real users.`;
 
 export interface ReportMeta {
   runId: string;
@@ -17,10 +18,17 @@ export interface ReportMeta {
   disclaimer: string;
 }
 
-export function buildMeta(input: Omit<ReportMeta, 'personas' | 'disclaimer'>, personas: Persona[]): ReportMeta {
+export function buildMeta(
+  input: Omit<ReportMeta, 'personas' | 'disclaimer'>,
+  personas: Persona[],
+): ReportMeta {
   return {
     ...input,
-    personas: personas.map((p) => ({ id: p.id, displayName: p.displayName, weight: p.populationWeight })),
+    personas: personas.map((p) => ({
+      id: p.id,
+      displayName: p.displayName,
+      weight: p.populationWeight,
+    })),
     disclaimer: DISCLAIMER(personas.length),
   };
 }

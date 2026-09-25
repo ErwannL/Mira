@@ -12,7 +12,13 @@ export async function start(env: Env, logger = true) {
   const cfg = appConfigFromEnv(env, { uiDir: join(root, 'dist', 'ui') });
   const db = createPool(cfg.databaseUrl);
   await migrate(db, join(root, 'app', 'db', 'migrations'));
-  const app = await buildApp(cfg, { db, data: loadSimData(root), nowS: () => Math.floor(Date.now() / 1000), logger, ownsDb: true });
+  const app = await buildApp(cfg, {
+    db,
+    data: loadSimData(root),
+    nowS: () => Math.floor(Date.now() / 1000),
+    logger,
+    ownsDb: true,
+  });
   await app.listen({ port: cfg.port, host: cfg.host });
   return app;
 }

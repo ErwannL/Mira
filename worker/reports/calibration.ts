@@ -31,10 +31,19 @@ export interface CalibrationReport {
 }
 
 /** Compares simulated vs real funnel and suggests (never applies) persona-weight changes. */
-export function buildCalibration(funnel: FunnelReport, real: RealAggregates, tolerance = 0.1): CalibrationReport {
+export function buildCalibration(
+  funnel: FunnelReport,
+  real: RealAggregates,
+  tolerance = 0.1,
+): CalibrationReport {
   const rows = funnel.headline.map((h) => {
     const r = real.funnel[h.id];
-    return { step: h.id, simulated: h.weightedShare, real: r ?? null, delta: r === undefined ? null : round4(h.weightedShare - r) };
+    return {
+      step: h.id,
+      simulated: h.weightedShare,
+      real: r ?? null,
+      delta: r === undefined ? null : round4(h.weightedShare - r),
+    };
   });
   const suggestions: CalibrationReport['suggestions'] = [];
   const seen = new Set<string>();
@@ -55,5 +64,11 @@ export function buildCalibration(funnel: FunnelReport, real: RealAggregates, tol
       });
     }
   }
-  return { type: 'calibration', runId: funnel.meta.runId, rows, suggestions, note: 'Suggestions only: persona weights are never changed automatically.' };
+  return {
+    type: 'calibration',
+    runId: funnel.meta.runId,
+    rows,
+    suggestions,
+    note: 'Suggestions only: persona weights are never changed automatically.',
+  };
 }

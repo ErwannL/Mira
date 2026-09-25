@@ -5,9 +5,7 @@
     "fr": "Changer de langue"
   },
   "area": "settings",
-  "requires": [
-    "login"
-  ],
+  "requires": ["login"],
   "planGate": "free",
   "minutes": 1,
   "ui": [

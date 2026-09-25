@@ -19,7 +19,11 @@ const reader = persona('screen-reader-user');
 
 describe('frictionOf', () => {
   it('is zero on a frictionless page', () => {
-    expect(frictionOf(emptyFacts(), lead, weights, ctx)).toEqual({ score: 0, reasons: [], hardBlock: null });
+    expect(frictionOf(emptyFacts(), lead, weights, ctx)).toEqual({
+      score: 0,
+      reasons: [],
+      hardBlock: null,
+    });
   });
 
   it('fires every rule on the worst page and caps at 1', () => {
@@ -49,7 +53,9 @@ describe('frictionOf', () => {
 
   it('weighs facts by traits', () => {
     const f = emptyFacts({ visibleFields: 6 });
-    expect(frictionOf(f, volunteer, weights, ctx).score).toBeGreaterThan(frictionOf(f, lead, weights, ctx).score);
+    expect(frictionOf(f, volunteer, weights, ctx).score).toBeGreaterThan(
+      frictionOf(f, lead, weights, ctx).score,
+    );
     const overflow = emptyFacts({ horizontalOverflow: true });
     expect(frictionOf(overflow, volunteer, weights, ctx).score).toBe(weights.overflowMobile);
     expect(frictionOf(overflow, lead, weights, ctx).score).toBe(weights.overflowOther);
@@ -70,10 +76,15 @@ describe('frictionOf', () => {
 
   it('screen reader: unnamed controls weigh triple and a needed unnamed control hard-blocks', () => {
     const f = emptyFacts({ unnamedControls: 1 });
-    expect(frictionOf(f, reader, weights, ctx).score).toBeCloseTo(3 * frictionOf(f, lead, weights, ctx).score, 6);
+    expect(frictionOf(f, reader, weights, ctx).score).toBeCloseTo(
+      3 * frictionOf(f, lead, weights, ctx).score,
+      6,
+    );
     const blocked = frictionOf(emptyFacts({ targetUnnamed: true }), reader, weights, ctx);
     expect(blocked.hardBlock).toBe('control-without-accessible-name');
-    expect(frictionOf(emptyFacts({ targetUnnamed: true }), lead, weights, ctx).hardBlock).toBeNull();
+    expect(
+      frictionOf(emptyFacts({ targetUnnamed: true }), lead, weights, ctx).hardBlock,
+    ).toBeNull();
   });
 
   it('score stays within [0,1] for any facts and persona (property)', () => {
@@ -124,6 +135,8 @@ describe('frustration dynamics', () => {
   });
 
   it('tolerance grows with frictionTolerance', () => {
-    expect(toleranceOf(volunteer, weights)).toBeLessThan(toleranceOf(persona('project-manager'), weights));
+    expect(toleranceOf(volunteer, weights)).toBeLessThan(
+      toleranceOf(persona('project-manager'), weights),
+    );
   });
 });

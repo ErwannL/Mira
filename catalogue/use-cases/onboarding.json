@@ -5,9 +5,7 @@
     "fr": "Tutoriel de démarrage"
   },
   "area": "activation",
-  "requires": [
-    "login"
-  ],
+  "requires": ["login"],
   "planGate": "free",
   "minutes": 3,
   "ui": [

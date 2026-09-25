@@ -5,9 +5,7 @@
     "fr": "Paiement (mode test)"
   },
   "area": "billing",
-  "requires": [
-    "billing-view-plans"
-  ],
+  "requires": ["billing-view-plans"],
   "planGate": "free",
   "minutes": 2,
   "ui": [
@@ -44,9 +42,7 @@
         "planKey": "{{planKey}}"
       },
       "auth": true,
-      "expectStatus": [
-        200
-      ]
+      "expectStatus": [200]
     }
   ],
   "success": {

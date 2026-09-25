@@ -15,7 +15,10 @@ export interface ApiDriverOptions {
 }
 
 export function isUnclear(message: string): boolean {
-  return message.trim().length < 15 || /^(error|erreur|invalid|invalide|oops|something went wrong)\W*$/i.test(message.trim());
+  return (
+    message.trim().length < 15 ||
+    /^(error|erreur|invalid|invalide|oops|something went wrong)\W*$/i.test(message.trim())
+  );
 }
 
 /** Drives the target's HTTP API only: the high-volume, load-truth driver. */
@@ -33,9 +36,14 @@ export class ApiDriver implements Driver {
       const vars = { ...ctx.vars, ...captured };
       const res = await this.call(step, vars, ctx);
       calls.push({ method: step.method, path: step.path, status: res.status, ms: res.ms });
-      facts = { ...facts, captcha: facts.captcha || res.captcha, clicksToGoal: facts.clicksToGoal + 1 };
+      facts = {
+        ...facts,
+        captcha: facts.captcha || res.captcha,
+        clicksToGoal: facts.clicksToGoal + 1,
+      };
       const expected = step.expectStatus ?? [];
-      const ok = expected.length > 0 ? expected.includes(res.status) : res.status >= 200 && res.status < 300;
+      const ok =
+        expected.length > 0 ? expected.includes(res.status) : res.status >= 200 && res.status < 300;
       if (ok) {
         for (const [name, path] of Object.entries(step.save ?? {})) {
           const v = readPath(res.json, path);
@@ -44,7 +52,10 @@ export class ApiDriver implements Driver {
         continue;
       }
       if (res.status === 402) {
-        paywall = { code: String(res.json.code ?? 'PAYWALL'), featureKey: String(res.json.feature ?? res.json.limitKey ?? 'unknown') };
+        paywall = {
+          code: String(res.json.code ?? 'PAYWALL'),
+          featureKey: String(res.json.feature ?? res.json.limitKey ?? 'unknown'),
+        };
         facts.paywall = true;
       } else if (res.status === 0 || res.status >= 500) {
         facts.networkErrors += 1;
@@ -57,17 +68,42 @@ export class ApiDriver implements Driver {
     }
     const wallMs = this.opts.now() - started;
     facts.timeToInteractiveMs = wallMs;
-    return { ok: error === null, facts, error, paywall, screenshot: null, apiCalls: calls, wallMs, captured, pages: [] };
+    return {
+      ok: error === null,
+      facts,
+      error,
+      paywall,
+      screenshot: null,
+      apiCalls: calls,
+      wallMs,
+      captured,
+      pages: [],
+    };
   }
 
   private async call(step: ApiStep, vars: Record<string, string>, ctx: AttemptContext) {
-    const encoded = Object.fromEntries(Object.entries(vars).map(([k, v]) => [k, encodeURIComponent(v)]));
-    const typed = { ...vars, email: applyMistakes('{{email}}', vars.email ?? '', ctx.mistakes), password: applyMistakes('{{password}}', vars.password ?? '', ctx.mistakes) };
+    const encoded = Object.fromEntries(
+      Object.entries(vars).map(([k, v]) => [k, encodeURIComponent(v)]),
+    );
+    const typed = {
+      ...vars,
+      email: applyMistakes('{{email}}', vars.email ?? '', ctx.mistakes),
+      password: applyMistakes('{{password}}', vars.password ?? '', ctx.mistakes),
+    };
     let body = step.body === undefined ? undefined : buildBody(step.body, typed);
-    if (body && typeof body === 'object' && 'acceptedTerms' in body && ctx.mistakes.includes('forgetTerms')) {
+    if (
+      body &&
+      typeof body === 'object' &&
+      'acceptedTerms' in body &&
+      ctx.mistakes.includes('forgetTerms')
+    ) {
       body = { ...body, acceptedTerms: false };
     }
-    const headers: Record<string, string> = { [RUN_HEADER]: this.opts.runHeader(), accept: 'application/json', 'accept-language': ctx.persona.locale };
+    const headers: Record<string, string> = {
+      [RUN_HEADER]: this.opts.runHeader(),
+      accept: 'application/json',
+      'accept-language': ctx.persona.locale,
+    };
     if (body !== undefined) headers['content-type'] = 'application/json';
     if (step.auth !== false && vars.token) headers.authorization = `Bearer ${vars.token}`;
     await this.opts.limiter?.take();
@@ -79,9 +115,19 @@ export class ApiDriver implements Driver {
         body: body === undefined ? undefined : JSON.stringify(body),
       });
       const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-      return { status: res.status, json, ms: this.opts.now() - t0, captcha: res.headers.get(CAPTCHA_HEADER) === '1' };
+      return {
+        status: res.status,
+        json,
+        ms: this.opts.now() - t0,
+        captcha: res.headers.get(CAPTCHA_HEADER) === '1',
+      };
     } catch {
-      return { status: 0, json: {} as Record<string, unknown>, ms: this.opts.now() - t0, captcha: false };
+      return {
+        status: 0,
+        json: {} as Record<string, unknown>,
+        ms: this.opts.now() - t0,
+        captcha: false,
+      };
     }
   }
 

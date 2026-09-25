@@ -32,17 +32,7 @@
   "privacyConcern": 0.5,
   "activityLevel": 0.9,
   "sessionsPerWeek": 12,
-  "activeHours": [
-    8,
-    9,
-    10,
-    11,
-    14,
-    15,
-    16,
-    17,
-    21
-  ],
+  "activeHours": [8, 9, 10, 11, 14, 15, 16, 17, 21],
   "sessionLengthMin": 40,
   "populationWeight": 0.07
 }

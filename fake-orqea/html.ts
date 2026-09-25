@@ -11,7 +11,13 @@ export interface View {
   consent: boolean;
 }
 
-const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const ESC: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
 export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ESC[c] as string);
 }
@@ -25,7 +31,17 @@ export function button(v: View, key: Key, opts: { icon?: boolean; attrs?: string
   return `<button type="submit"${attrs}>${esc(v.t(key))}</button>`;
 }
 
-export function field(label: string, name: string, opts: { type?: string; required?: boolean; value?: string; textarea?: boolean; extra?: string } = {}): string {
+export function field(
+  label: string,
+  name: string,
+  opts: {
+    type?: string;
+    required?: boolean;
+    value?: string;
+    textarea?: boolean;
+    extra?: string;
+  } = {},
+): string {
   const req = opts.required ? ' required' : '';
   const extra = opts.extra ? ` ${opts.extra}` : '';
   const control = opts.textarea
@@ -34,14 +50,26 @@ export function field(label: string, name: string, opts: { type?: string; requir
   return `<label>${esc(label)} ${control}</label>`;
 }
 
-export function select(label: string, name: string, options: [string, string][], selected: string): string {
+export function select(
+  label: string,
+  name: string,
+  options: [string, string][],
+  selected: string,
+): string {
   const opts = options
-    .map(([value, text]) => `<option value="${value}"${value === selected ? ' selected' : ''}>${esc(text)}</option>`)
+    .map(
+      ([value, text]) =>
+        `<option value="${value}"${value === selected ? ' selected' : ''}>${esc(text)}</option>`,
+    )
     .join('');
   return `<label>${esc(label)} <select name="${name}">${opts}</select></label>`;
 }
 
-export function apiForm(api: string, inner: string, opts: { redirect?: string; done?: string; data?: Record<string, string> } = {}): string {
+export function apiForm(
+  api: string,
+  inner: string,
+  opts: { redirect?: string; done?: string; data?: Record<string, string> } = {},
+): string {
   const data = Object.entries(opts.data ?? {})
     .map(([k, val]) => ` data-${k}="${esc(val)}"`)
     .join('');
@@ -51,8 +79,17 @@ export function apiForm(api: string, inner: string, opts: { redirect?: string; d
 }
 
 function header(v: View): string {
-  if (!v.user) return `<header><a href="/">${v.t('brand')}</a> <a href="/login">${esc(v.t('logIn'))}</a></header>`;
-  const links: [string, Key][] = [['/boards', 'boards'], ['/calendar', 'calendar'], ['/notes', 'notes'], ['/forms', 'forms'], ['/qr', 'qr'], ['/billing', 'billing'], ['/settings', 'settings']];
+  if (!v.user)
+    return `<header><a href="/">${v.t('brand')}</a> <a href="/login">${esc(v.t('logIn'))}</a></header>`;
+  const links: [string, Key][] = [
+    ['/boards', 'boards'],
+    ['/calendar', 'calendar'],
+    ['/notes', 'notes'],
+    ['/forms', 'forms'],
+    ['/qr', 'qr'],
+    ['/billing', 'billing'],
+    ['/settings', 'settings'],
+  ];
   const nav = links.map(([href, k]) => `<a href="${href}">${esc(v.t(k))}</a>`).join(' ');
   return `<header><nav aria-label="${esc(v.t('nav'))}">${nav}</nav>
 <form action="/search" method="get" role="search"><input type="search" name="q" aria-label="${esc(v.t('search'))}"></form></header>`;

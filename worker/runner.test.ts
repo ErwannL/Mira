@@ -50,11 +50,32 @@ beforeEach(async () => {
 });
 afterEach(async () => fake.close());
 
-const deps = (o: Partial<WorkerDeps> = {}): WorkerDeps => ({ db, data, fetchImpl: fetch, launch: async () => browser, nowS: () => Math.floor(Date.now() / 1000), ...o });
+const deps = (o: Partial<WorkerDeps> = {}): WorkerDeps => ({
+  db,
+  data,
+  fetchImpl: fetch,
+  launch: async () => browser,
+  nowS: () => Math.floor(Date.now() / 1000),
+  ...o,
+});
 // The shared browser must survive each run's drivers.close().
-const keepOpen = { ...deps(), launch: async () => ({ newContext: (o: object) => browser.newContext(o), close: async () => {} }) as unknown as Browser };
+const keepOpen = {
+  ...deps(),
+  launch: async () =>
+    ({
+      newContext: (o: object) => browser.newContext(o),
+      close: async () => {},
+    }) as unknown as Browser,
+};
 async function queued(id: string, config: Partial<RunConfigInput> = {}, seed = 7) {
-  const c = runConfigSchema.parse({ kind: 'journey', targetUrl: fake.baseUrl, totalSimulatedDays: 1, minutesPerRound: 60, personaIds: ['student', 'retired-volunteer'], ...config });
+  const c = runConfigSchema.parse({
+    kind: 'journey',
+    targetUrl: fake.baseUrl,
+    totalSimulatedDays: 1,
+    minutesPerRound: 60,
+    personaIds: ['student', 'retired-volunteer'],
+    ...config,
+  });
   await createRun(db, id, c, seed, 'ops');
   await transition(db, id, 'queued', 'ops');
   return (await transition(db, id, 'preparing', 'w-test'))!;
@@ -66,9 +87,21 @@ describe('executeRun', () => {
     const done = await executeRun(run, cfg, { ...keepOpen, db });
     expect(done.status).toBe('done');
     expect(done.summary).toMatchObject({ cleanup: { residualRows: 0 } });
-    expect((await transitionsOf(db, 'jr1')).map((t) => t.to_status)).toEqual(['draft', 'queued', 'preparing', 'running', 'reporting', 'cleaning', 'done']);
+    expect((await transitionsOf(db, 'jr1')).map((t) => t.to_status)).toEqual([
+      'draft',
+      'queued',
+      'preparing',
+      'running',
+      'reporting',
+      'cleaning',
+      'done',
+    ]);
     const funnel = (await getReport<FunnelReport>(db, 'jr1', 'funnel'))!;
-    expect(funnel.meta).toMatchObject({ seed: 7, catalogueVersion: data.catalogue.version, disclaimer: 'Simulation of 2 modelled personas, not a measurement of real users.' });
+    expect(funnel.meta).toMatchObject({
+      seed: 7,
+      catalogueVersion: data.catalogue.version,
+      disclaimer: 'Simulation of 2 modelled personas, not a measurement of real users.',
+    });
     expect(funnel.headline[0]).toMatchObject({ id: 'landing' });
     expect(await getReport<LoadReport>(db, 'jr1', 'load')).not.toBeNull();
     expect(await getReport(db, 'jr1', 'pricing')).not.toBeNull();
@@ -81,7 +114,8 @@ describe('executeRun', () => {
     // same seed + same target + same catalogue ⇒ same decisions
     const again = await queued('jr2');
     await executeRun(again, cfg, { ...keepOpen, db });
-    const decisions = async (id: string) => (await eventsOf(db, id)).map((e) => [e.personaId, e.useCaseId, e.action, e.simTime]);
+    const decisions = async (id: string) =>
+      (await eventsOf(db, id)).map((e) => [e.personaId, e.useCaseId, e.action, e.simTime]);
     expect(await decisions('jr2')).toEqual(await decisions('jr1'));
   });
 
@@ -90,18 +124,33 @@ describe('executeRun', () => {
     const run = await queued('pr1', { targetUrl: prod.baseUrl });
     const r = await executeRun(run, cfg, deps());
     const after = (await getRun(db, 'pr1'))!;
-    expect(after).toMatchObject({ status: 'refused', refusal_code: 'ORQEA_CONTRACT_MISSING:GET /api/admin/synthetic/target' });
+    expect(after).toMatchObject({
+      status: 'refused',
+      refusal_code: 'ORQEA_CONTRACT_MISSING:GET /api/admin/synthetic/target',
+    });
     expect(r.status).toBe('preparing');
     await prod.close();
     const reporting = await liveFake();
     const run2 = await queued('pr2', { targetUrl: reporting.baseUrl });
     const lying = (async (url: string, init?: RequestInit) => {
       const res = await fetch(url, init);
-      if (url.endsWith('/api/admin/synthetic/target')) return new Response(JSON.stringify({ env: 'production', stripeMode: 'live', syntheticEnabled: true, version: 'x' }), { status: 200 });
+      if (url.endsWith('/api/admin/synthetic/target'))
+        return new Response(
+          JSON.stringify({
+            env: 'production',
+            stripeMode: 'live',
+            syntheticEnabled: true,
+            version: 'x',
+          }),
+          { status: 200 },
+        );
       return res;
     }) as typeof fetch;
     await executeRun(run2, cfg, deps({ fetchImpl: lying }));
-    expect((await getRun(db, 'pr2'))).toMatchObject({ status: 'refused', refusal_code: 'PRODUCTION_ENV' });
+    expect(await getRun(db, 'pr2')).toMatchObject({
+      status: 'refused',
+      refusal_code: 'PRODUCTION_ENV',
+    });
     await reporting.close();
   });
 
@@ -111,18 +160,32 @@ describe('executeRun', () => {
       const res = await fetch(url, init);
       if (!url.endsWith('/api')) return res;
       const body = (await res.json()) as { endpoints: { path: string }[] };
-      return new Response(JSON.stringify({ endpoints: body.endpoints.filter((e) => e.path !== '/api/notes') }), { status: 200 });
+      return new Response(
+        JSON.stringify({ endpoints: body.endpoints.filter((e) => e.path !== '/api/notes') }),
+        { status: 200 },
+      );
     }) as typeof fetch;
     await executeRun(run, cfg, deps({ fetchImpl: drifting }));
-    expect(await getRun(db, 'dr1')).toMatchObject({ status: 'failed', error: 'CATALOGUE_DRIFT: notes-reminder: POST /api/notes' });
+    expect(await getRun(db, 'dr1')).toMatchObject({
+      status: 'failed',
+      error: 'CATALOGUE_DRIFT: notes-reminder: POST /api/notes',
+    });
   });
 
   it('volume mode: API clones, rate-limited, load report with latencies', async () => {
-    const run = await queued('vo1', { kind: 'volume', allowCheckout: true, targetUsers: 4, personaIds: ['student', 'agency'], totalSimulatedDays: 7 });
+    const run = await queued('vo1', {
+      kind: 'volume',
+      allowCheckout: true,
+      targetUsers: 4,
+      personaIds: ['student', 'agency'],
+      totalSimulatedDays: 7,
+    });
     const done = await executeRun(run, cfg, deps());
     expect(done.status).toBe('done');
     const load = (await getReport<LoadReport>(db, 'vo1', 'load'))!;
-    expect(load.measuredLatency.find((l) => l.endpoint === 'POST /api/auth/register')!.count).toBeGreaterThanOrEqual(4);
+    expect(
+      load.measuredLatency.find((l) => l.endpoint === 'POST /api/auth/register')!.count,
+    ).toBeGreaterThanOrEqual(4);
     const clones = new Set((await eventsOf(db, 'vo1')).map((e) => e.personaId));
     expect([...clones].sort()).toEqual(['agency-c1', 'student-c1', 'student-c2', 'student-c3']);
     expect(await getReport(db, 'vo1', 'funnel')).toBeNull();
@@ -143,34 +206,81 @@ describe('executeRun', () => {
     expect((await executeRun(bad, cfg, deps())).status).toBe('failed');
     expect((await getRun(db, 'er1'))!.error).toContain('PUT /__control/scenario/er1 → 400');
     const residual = (async (url: string, init?: RequestInit) =>
-      url.endsWith('/cleanup') ? new Response('{"before":1,"after":1,"residualRows":1}', { status: 200 }) : fetch(url, init)) as typeof fetch;
-    const r1 = await queued('er2', { kind: 'volume', targetUsers: 1, personaIds: ['student'], totalSimulatedDays: 0.1 });
-    expect((await executeRun(r1, cfg, deps({ fetchImpl: residual }))).error).toBe('CLEANUP_INCOMPLETE: 1 residual rows');
+      url.endsWith('/cleanup')
+        ? new Response('{"before":1,"after":1,"residualRows":1}', { status: 200 })
+        : fetch(url, init)) as typeof fetch;
+    const r1 = await queued('er2', {
+      kind: 'volume',
+      targetUsers: 1,
+      personaIds: ['student'],
+      totalSimulatedDays: 0.1,
+    });
+    expect((await executeRun(r1, cfg, deps({ fetchImpl: residual }))).error).toBe(
+      'CLEANUP_INCOMPLETE: 1 residual rows',
+    );
     const broken = (async (url: string, init?: RequestInit) =>
-      url.endsWith('/cleanup') ? new Response('nope', { status: 500 }) : fetch(url, init)) as typeof fetch;
-    const r2 = await queued('er3', { kind: 'volume', targetUsers: 1, personaIds: ['student'], totalSimulatedDays: 0.1 });
-    expect((await executeRun(r2, cfg, deps({ fetchImpl: broken }))).error).toContain('CLEANUP_FAILED');
+      url.endsWith('/cleanup')
+        ? new Response('nope', { status: 500 })
+        : fetch(url, init)) as typeof fetch;
+    const r2 = await queued('er3', {
+      kind: 'volume',
+      targetUsers: 1,
+      personaIds: ['student'],
+      totalSimulatedDays: 0.1,
+    });
+    expect((await executeRun(r2, cfg, deps({ fetchImpl: broken }))).error).toContain(
+      'CLEANUP_FAILED',
+    );
   });
 });
 
 describe('worker loop', () => {
   it('tick claims queued runs, and fails a run whose execution crashes', async () => {
     expect(await tick(cfg, deps())).toBeNull();
-    const c = runConfigSchema.parse({ kind: 'volume', targetUrl: fake.baseUrl, personaIds: ['ghost'] });
+    const c = runConfigSchema.parse({
+      kind: 'volume',
+      targetUrl: fake.baseUrl,
+      personaIds: ['ghost'],
+    });
     await createRun(db, 'tk1', c, 1, 'ops');
     await transition(db, 'tk1', 'queued', 'ops');
     const r = (await tick(cfg, deps()))!;
     expect(r).toMatchObject({ status: 'failed', error: 'Unknown personas: ghost' });
-    await createRun(db, 'tk2', runConfigSchema.parse({ kind: 'volume', targetUrl: fake.baseUrl, targetUsers: 1, personaIds: ['student'], totalSimulatedDays: 0.1 }), 1, 'ops');
+    await createRun(
+      db,
+      'tk2',
+      runConfigSchema.parse({
+        kind: 'volume',
+        targetUrl: fake.baseUrl,
+        targetUsers: 1,
+        personaIds: ['student'],
+        totalSimulatedDays: 0.1,
+      }),
+      1,
+      'ops',
+    );
     await transition(db, 'tk2', 'queued', 'ops');
     expect((await tick(cfg, deps()))!.status).toBe('done');
   });
 
   it('keeps the original row when even the failure transition is impossible', async () => {
-    const c = runConfigSchema.parse({ kind: 'volume', targetUrl: fake.baseUrl, personaIds: ['ghost'] });
+    const c = runConfigSchema.parse({
+      kind: 'volume',
+      targetUrl: fake.baseUrl,
+      personaIds: ['ghost'],
+    });
     await createRun(db, 'tk3', c, 1, 'ops');
     await transition(db, 'tk3', 'queued', 'ops');
-    const sabotage = { ...deps(), data: { ...data, get personas(): never { void db.query("update runs set status = 'done' where id = 'tk3'"); throw new Error('boom'); } } } as unknown as WorkerDeps;
+    const sabotage = {
+      ...deps(),
+      data: {
+        ...data,
+        get personas(): never {
+          void db.query("update runs set status = 'done' where id = 'tk3'");
+          throw new Error('boom');
+        },
+      },
+    } as unknown as WorkerDeps;
     const r = (await tick(cfg, sabotage))!;
     expect(r.id).toBe('tk3');
   });

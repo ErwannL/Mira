@@ -5,7 +5,9 @@ export function quantile(values: number[], q: number): number | null {
   const pos = (sorted.length - 1) * q;
   const lo = Math.floor(pos);
   const hi = Math.ceil(pos);
-  return round4((sorted[lo] as number) + ((sorted[hi] as number) - (sorted[lo] as number)) * (pos - lo));
+  return round4(
+    (sorted[lo] as number) + ((sorted[hi] as number) - (sorted[lo] as number)) * (pos - lo),
+  );
 }
 
 export const median = (values: number[]): number | null => quantile(values, 0.5);

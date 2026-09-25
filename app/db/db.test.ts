@@ -7,9 +7,32 @@ import { runConfigSchema } from '../../shared/run-config.js';
 import { MIGRATIONS, testDb } from '../test-helpers/db.js';
 import { eventsOf, EventWriter } from './events.js';
 import { DbMemoryStore, memoriesOf } from './memory.js';
-import { audit, auditTrail, consumeSsoToken, createSession, deleteSession, findSession, getReport, saveCalibration, saveReport } from './misc.js';
+import {
+  audit,
+  auditTrail,
+  consumeSsoToken,
+  createSession,
+  deleteSession,
+  findSession,
+  getReport,
+  saveCalibration,
+  saveReport,
+} from './misc.js';
 import { migrate, type Db } from './pool.js';
-import { claimNext, createRun, deleteRun, getRun, heartbeat, isCancelRequested, listRuns, requestCancel, staleRuns, transition, transitionsOf, TransitionError } from './runs.js';
+import {
+  claimNext,
+  createRun,
+  deleteRun,
+  getRun,
+  heartbeat,
+  isCancelRequested,
+  listRuns,
+  requestCancel,
+  staleRuns,
+  transition,
+  transitionsOf,
+  TransitionError,
+} from './runs.js';
 import { newMemory } from '../../worker/engine/journey.js';
 import { persona } from '../../shared/test-helpers/fixtures.js';
 import type { JourneyEvent } from '../../worker/engine/types.js';
@@ -30,7 +53,9 @@ describe('migrations', () => {
     writeFileSync(join(dir, '999_bad.sql'), 'create table x (; nonsense');
     writeFileSync(join(dir, 'notes.txt'), 'ignored');
     await expect(migrate(db, dir)).rejects.toThrow();
-    const { rows } = await db.query("select count(*)::int as n from schema_migrations where name = '999_bad.sql'");
+    const { rows } = await db.query(
+      "select count(*)::int as n from schema_migrations where name = '999_bad.sql'",
+    );
     expect(rows[0].n).toBe(0);
   });
 });
@@ -43,7 +68,11 @@ describe('runs', () => {
     await transition(db, 'r1', 'queued', 'ops');
     const [a, b] = await Promise.all([claimNext(db, 'w1'), claimNext(db, 'w2')]);
     expect([a?.id, b?.id].filter(Boolean)).toEqual(['r1']);
-    const running = await transition(db, 'r1', 'running', 'w1', null, { catalogue_version: 'c1', weights_version: 'w1', target_version: 't1' });
+    const running = await transition(db, 'r1', 'running', 'w1', null, {
+      catalogue_version: 'c1',
+      weights_version: 'w1',
+      target_version: 't1',
+    });
     expect(running).toMatchObject({ status: 'running', catalogue_version: 'c1' });
     await expect(transition(db, 'r1', 'queued', 'x')).rejects.toBeInstanceOf(TransitionError);
     await expect(transition(db, 'nope', 'queued', 'x')).rejects.toThrow('cannot go from missing');
@@ -52,7 +81,13 @@ describe('runs', () => {
     const done = await transition(db, 'r1', 'done', 'w1', 'ok', { summary: { a: 1 } });
     expect(done.finished_at).not.toBeNull();
     expect((await transitionsOf(db, 'r1')).map((t) => `${t.from_status}>${t.to_status}`)).toEqual([
-      'null>draft', 'draft>queued', 'queued>preparing', 'preparing>running', 'running>reporting', 'reporting>cleaning', 'cleaning>done',
+      'null>draft',
+      'draft>queued',
+      'queued>preparing',
+      'preparing>running',
+      'running>reporting',
+      'reporting>cleaning',
+      'cleaning>done',
     ]);
     expect((await listRuns(db)).map((r) => r.id)).toEqual(['r1']);
   });
@@ -88,8 +123,25 @@ describe('runs', () => {
 });
 
 const ev = (i: number, personaId = 'student'): JourneyEvent => ({
-  kind: 'step', personaId, session: 1, simTime: '2030-01-07T09:00:00Z', wallTime: '2030-01-01T00:00:00Z', useCaseId: 'signup', attempt: 1,
-  ok: true, wallMs: i, facts: null, friction: null, frustration: 0, action: 'continue', rule: `r${i}`, mistakes: [], screenshot: null, apiCalls: [], money: null, error: null,
+  kind: 'step',
+  personaId,
+  session: 1,
+  simTime: '2030-01-07T09:00:00Z',
+  wallTime: '2030-01-01T00:00:00Z',
+  useCaseId: 'signup',
+  attempt: 1,
+  ok: true,
+  wallMs: i,
+  facts: null,
+  friction: null,
+  frustration: 0,
+  action: 'continue',
+  rule: `r${i}`,
+  mistakes: [],
+  screenshot: null,
+  apiCalls: [],
+  money: null,
+  error: null,
 });
 
 describe('events, memory, reports, sessions, audit', () => {
@@ -110,15 +162,26 @@ describe('events, memory, reports, sessions, audit', () => {
     const key = dataKey('k'.repeat(32));
     const store = new DbMemoryStore(db, 'm1', key);
     expect(await store.load('student')).toBeNull();
-    const memory = newMemory(persona('student'), { boardName: 'B', token: 't', verifyUrl: 'u', verifyToken: 'v' });
-    await store.save(memory, { email: 'synth+m1-student@synthetic.invalid', password: 'Sup3rSecret!' });
+    const memory = newMemory(persona('student'), {
+      boardName: 'B',
+      token: 't',
+      verifyUrl: 'u',
+      verifyToken: 'v',
+    });
+    await store.save(memory, {
+      email: 'synth+m1-student@synthetic.invalid',
+      password: 'Sup3rSecret!',
+    });
     const { rows } = await db.query('select credentials_enc from persona_memory');
     expect(rows[0].credentials_enc).not.toContain('Sup3rSecret');
     expect((await store.load('student'))!.credentials!.password).toBe('Sup3rSecret!');
     expect((await store.load('student'))!.memory.vars).toEqual({ boardName: 'B' });
     memory.stage = 'done';
     await store.save(memory, null);
-    expect(await store.load('student')).toEqual({ memory: { ...memory, vars: { boardName: 'B' } }, credentials: null });
+    expect(await store.load('student')).toEqual({
+      memory: { ...memory, vars: { boardName: 'B' } },
+      credentials: null,
+    });
     expect((await memoriesOf(db, 'm1')).map((m) => m.stage)).toEqual(['done']);
   });
 

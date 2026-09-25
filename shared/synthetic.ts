@@ -20,7 +20,11 @@ export function signRunHeader(runId: string, secret: string, nowS: number): stri
 }
 
 /** Returns the runId when the header is authentic and fresh, else null. */
-export function verifyRunHeader(value: string | undefined, secret: string, nowS: number): string | null {
+export function verifyRunHeader(
+  value: string | undefined,
+  secret: string,
+  nowS: number,
+): string | null {
   const parts = (value ?? '').split('.');
   if (parts.length !== 3) return null;
   const [runId, ts, mac] = parts as [string, string, string];
@@ -41,7 +45,9 @@ export function parseSyntheticEmail(email: string): { runId: string; rest: strin
 
 export function isLoopbackHost(host: string): boolean {
   const h = host.replace(/^\[|\]$/g, '').toLowerCase();
-  return h === 'localhost' || h === '::1' || /^127(\.\d{1,3}){3}$/.test(h) || h === '::ffff:127.0.0.1';
+  return (
+    h === 'localhost' || h === '::1' || /^127(\.\d{1,3}){3}$/.test(h) || h === '::ffff:127.0.0.1'
+  );
 }
 
 /** Hostname part of a Host header ("localhost:4000", "[::1]:80"). */

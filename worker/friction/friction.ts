@@ -38,9 +38,12 @@ export const RULES: Record<string, Rule> = {
   'too-many-clicks': (f, p, w, c) =>
     Math.max(0, f.clicksToGoal - c.expectedClicks) * w.perExtraClick * (1.2 - p.patience),
   'slow-page': (f, p, w) =>
-    clamp01(Math.max(0, f.timeToInteractiveMs - w.ttiFreeMs) / w.ttiScaleMs) * w.tti * (1.2 - p.patience),
+    clamp01(Math.max(0, f.timeToInteractiveMs - w.ttiFreeMs) / w.ttiScaleMs) *
+    w.tti *
+    (1.2 - p.patience),
   'network-error': (f, _p, w) => f.networkErrors * w.networkError,
-  'validation-error': (f, p, w) => f.validationErrors * w.validationError * (1 - 0.5 * p.recoveryWillingness),
+  'validation-error': (f, p, w) =>
+    f.validationErrors * w.validationError * (1 - 0.5 * p.recoveryWillingness),
   'unclear-error': (f, p, w) => f.unclearErrors * w.unclearError * (1.2 - p.techSavvy),
   'unnamed-control': (f, p, w) =>
     f.unnamedControls * w.unnamedControl * (p.assistive?.screenReader ? 3 : 1),
@@ -71,7 +74,9 @@ export function frictionOf(
   reasons.sort((a, b) => b.value - a.value);
   const factor = ctx.learned ? weights.learnedFactor : 1;
   const hardBlock =
-    persona.assistive?.screenReader && facts.targetUnnamed ? 'control-without-accessible-name' : null;
+    persona.assistive?.screenReader && facts.targetUnnamed
+      ? 'control-without-accessible-name'
+      : null;
   return { score: round(clamp01(sum * factor)), reasons, hardBlock };
 }
 

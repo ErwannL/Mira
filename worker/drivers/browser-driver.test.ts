@@ -21,13 +21,33 @@ beforeAll(async () => {
 });
 afterAll(async () => browser.close());
 
-async function session(p: Persona, fake: Awaited<ReturnType<typeof liveFake>>, shots: string | null = null) {
-  return BrowserDriver.open(browser, p, { baseUrl: fake.baseUrl, runHeader: () => fake.runHeader(), screenshotDir: shots, stepTimeoutMs: 2500, commonUi });
+async function session(
+  p: Persona,
+  fake: Awaited<ReturnType<typeof liveFake>>,
+  shots: string | null = null,
+) {
+  return BrowserDriver.open(browser, p, {
+    baseUrl: fake.baseUrl,
+    runHeader: () => fake.runHeader(),
+    screenshotDir: shots,
+    stepTimeoutMs: 2500,
+    commonUi,
+  });
 }
-function ctx(p: Persona, vars: Record<string, string>, mistakes: Mistake[] = [], label = 'step'): AttemptContext {
+function ctx(
+  p: Persona,
+  vars: Record<string, string>,
+  mistakes: Mistake[] = [],
+  label = 'step',
+): AttemptContext {
   return { persona: p, vars: { locale: p.locale, ...vars }, mistakes, label };
 }
-async function verified(fake: Awaited<ReturnType<typeof liveFake>>, d: BrowserDriver, p: Persona, vars: Record<string, string>) {
+async function verified(
+  fake: Awaited<ReturnType<typeof liveFake>>,
+  d: BrowserDriver,
+  p: Persona,
+  vars: Record<string, string>,
+) {
   await d.attempt(uc('signup'), ctx(p, vars));
   const u = fake.deps.store.userByEmail(vars.email!)!;
   vars.verifyUrl = `${fake.baseUrl}/api/auth/verify-email?token=${u.verifyToken}`;
@@ -41,7 +61,12 @@ describe('BrowserDriver against the fake Orqea', () => {
     const shots = mkdtempSync(join(tmpdir(), 'shots-'));
     const p = persona('retired-volunteer');
     const d = await session(p, fake, shots);
-    const vars = { email: 'synth+r1-retired-volunteer@synthetic.invalid', password: 'Str0ngPassword1', boardName: 'Banque alimentaire', cardTitle: 'Planning samedi' };
+    const vars = {
+      email: 'synth+r1-retired-volunteer@synthetic.invalid',
+      password: 'Str0ngPassword1',
+      boardName: 'Banque alimentaire',
+      cardTitle: 'Planning samedi',
+    };
     const landing = await d.attempt(uc('landing'), ctx(p, vars, [], 'landing'));
     expect(landing.ok).toBe(true);
     expect(landing.facts.cookieBanner).toBe(true);
@@ -50,7 +75,11 @@ describe('BrowserDriver against the fake Orqea', () => {
     expect(existsSync(join(shots, landing.screenshot!))).toBe(true);
     const signup = await d.attempt(uc('signup'), ctx(p, vars));
     expect(signup.ok).toBe(true);
-    expect(signup.facts).toMatchObject({ visibleFields: 4, termsCheckbox: true, validationErrors: 0 });
+    expect(signup.facts).toMatchObject({
+      visibleFields: 4,
+      termsCheckbox: true,
+      validationErrors: 0,
+    });
     expect(signup.apiCalls.find((c) => c.path === '/api/auth/register')?.status).toBe(201);
     const u = fake.deps.store.userByEmail(vars.email)!;
     expect(u.language).toBe('fr');
@@ -85,7 +114,12 @@ describe('BrowserDriver against the fake Orqea', () => {
     const fake = await liveFake();
     const p = persona('project-manager');
     const d = await session(p, fake);
-    const vars = { email: 'synth+r1-project-manager@synthetic.invalid', password: 'Str0ngPassword1', boardName: 'Q3', cardTitle: 'Kickoff' };
+    const vars = {
+      email: 'synth+r1-project-manager@synthetic.invalid',
+      password: 'Str0ngPassword1',
+      boardName: 'Q3',
+      cardTitle: 'Kickoff',
+    };
     await verified(fake, d, p, vars);
     await d.attempt(uc('create-board'), ctx(p, vars));
     const r = await d.attempt(uc('automation-rule'), ctx(p, vars));
@@ -101,13 +135,47 @@ describe('BrowserDriver against the fake Orqea', () => {
     const fake = await liveFake({}, { lockedFeatures: [] });
     const p = persona('agency');
     const d = await session(p, fake);
-    const vars = { email: 'synth+r1-agency@synthetic.invalid', password: 'Str0ngPassword1', boardName: 'Client A', cardTitle: 'Brief', inviteEmail: 'jo@example.com' };
+    const vars = {
+      email: 'synth+r1-agency@synthetic.invalid',
+      password: 'Str0ngPassword1',
+      boardName: 'Client A',
+      cardTitle: 'Brief',
+      inviteEmail: 'jo@example.com',
+    };
     await verified(fake, d, p, vars);
-    for (const id of ['onboarding', 'create-board', 'create-list', 'create-card', 'move-card', 'card-priority', 'edit-card', 'checklist', 'comment', 'bulk-actions', 'automation-rule', 'invite-member', 'invite-without-account', 'mention', 'calendar', 'notes-reminder', 'form-create', 'form-answer-public', 'qr-create', 'global-search', 'settings-theme', 'settings-language', 'data-export', 'billing-view-plans']) {
+    for (const id of [
+      'onboarding',
+      'create-board',
+      'create-list',
+      'create-card',
+      'move-card',
+      'card-priority',
+      'edit-card',
+      'checklist',
+      'comment',
+      'bulk-actions',
+      'automation-rule',
+      'invite-member',
+      'invite-without-account',
+      'mention',
+      'calendar',
+      'notes-reminder',
+      'form-create',
+      'form-answer-public',
+      'qr-create',
+      'global-search',
+      'settings-theme',
+      'settings-language',
+      'data-export',
+      'billing-view-plans',
+    ]) {
       const r = await d.attempt(uc(id), ctx(p, vars));
       expect(r.ok, `${id}: ${r.error}`).toBe(true);
     }
-    const checkout = await d.attempt(uc('billing-checkout'), ctx(p, { ...vars, planName: 'Pro', planKey: 'pro' }));
+    const checkout = await d.attempt(
+      uc('billing-checkout'),
+      ctx(p, { ...vars, planName: 'Pro', planKey: 'pro' }),
+    );
     expect(checkout.ok, checkout.error ?? '').toBe(true);
     expect((await d.attempt(uc('account-delete'), ctx(p, vars))).ok).toBe(true);
     await d.close();
@@ -118,14 +186,29 @@ describe('BrowserDriver against the fake Orqea', () => {
     const fake = await liveFake({}, { unnamedControls: true });
     const p = persona('screen-reader-user');
     const d = await session(p, fake);
-    const vars = { email: 'synth+r1-screen-reader-user@synthetic.invalid', password: 'Str0ngPassword1', boardName: 'Mine', cardTitle: 'Read mail' };
+    const vars = {
+      email: 'synth+r1-screen-reader-user@synthetic.invalid',
+      password: 'Str0ngPassword1',
+      boardName: 'Mine',
+      cardTitle: 'Read mail',
+    };
     await verified(fake, d, p, vars);
     expect((await d.attempt(uc('create-board'), ctx(p, vars))).ok).toBe(true);
     const card = await d.attempt(uc('create-card'), ctx(p, vars));
     expect(card.ok).toBe(false);
     expect(card.facts.targetUnnamed).toBe(true);
     expect(card.facts.unnamedControls).toBeGreaterThan(0);
-    const drag: UseCase = { ...uc('move-card'), ui: [{ action: 'goto', path: '/boards' }, { action: 'drag', target: { role: 'link', name: { en: 'Mine', fr: 'Mine' } }, to: { role: 'link', name: { en: 'Mine', fr: 'Mine' } } }] };
+    const drag: UseCase = {
+      ...uc('move-card'),
+      ui: [
+        { action: 'goto', path: '/boards' },
+        {
+          action: 'drag',
+          target: { role: 'link', name: { en: 'Mine', fr: 'Mine' } },
+          to: { role: 'link', name: { en: 'Mine', fr: 'Mine' } },
+        },
+      ],
+    };
     const r = await d.attempt(drag, ctx(p, vars));
     expect(r.error).toContain('no keyboard alternative');
     expect(r.facts.targetUnnamed).toBe(false);
@@ -148,7 +231,10 @@ describe('BrowserDriver against the fake Orqea', () => {
     const fake = await liveFake({}, { captcha: true, slowMs: 300 });
     const p = persona('tech-lead');
     const d = await session(p, fake);
-    const signup = await d.attempt(uc('signup'), ctx(p, { email: 'synth+r1-tech-lead@synthetic.invalid', password: 'Str0ngPassword1' }));
+    const signup = await d.attempt(
+      uc('signup'),
+      ctx(p, { email: 'synth+r1-tech-lead@synthetic.invalid', password: 'Str0ngPassword1' }),
+    );
     expect(signup.facts.captcha).toBe(true);
     expect(signup.facts.timeToInteractiveMs).toBeGreaterThanOrEqual(250);
     await d.close();
@@ -172,13 +258,34 @@ describe('BrowserDriver against the fake Orqea', () => {
     await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
     const baseUrl = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
     const p = persona('tech-lead');
-    const d = await BrowserDriver.open(browser, p, { baseUrl, runHeader: () => 'r.1.x', screenshotDir: null, stepTimeoutMs: 1000, commonUi });
-    const probe = (path: string, ...rest: UseCase['ui']): UseCase => ({ ...uc('landing'), ui: [{ action: 'goto', path }, ...rest] });
+    const d = await BrowserDriver.open(browser, p, {
+      baseUrl,
+      runHeader: () => 'r.1.x',
+      screenshotDir: null,
+      stepTimeoutMs: 1000,
+      commonUi,
+    });
+    const probe = (path: string, ...rest: UseCase['ui']): UseCase => ({
+      ...uc('landing'),
+      ui: [{ action: 'goto', path }, ...rest],
+    });
     expect((await d.attempt(probe('/boom'), ctx(p, {}))).facts.networkErrors).toBe(1);
-    expect((await d.attempt(probe('/pay'), ctx(p, {}))).paywall).toEqual({ code: 'PAYWALL', featureKey: 'unknown' });
-    expect((await d.attempt(probe('/limit'), ctx(p, {}))).paywall).toEqual({ code: 'PAYWALL', featureKey: 'boards' });
-    expect((await d.attempt(probe('/empty'), ctx(p, {}))).paywall).toEqual({ code: 'PAYWALL', featureKey: 'unknown' });
-    const heading = (name: string) => ({ action: 'expect' as const, target: { role: 'heading', name: { en: name, fr: name } } });
+    expect((await d.attempt(probe('/pay'), ctx(p, {}))).paywall).toEqual({
+      code: 'PAYWALL',
+      featureKey: 'unknown',
+    });
+    expect((await d.attempt(probe('/limit'), ctx(p, {}))).paywall).toEqual({
+      code: 'PAYWALL',
+      featureKey: 'boards',
+    });
+    expect((await d.attempt(probe('/empty'), ctx(p, {}))).paywall).toEqual({
+      code: 'PAYWALL',
+      featureKey: 'unknown',
+    });
+    const heading = (name: string) => ({
+      action: 'expect' as const,
+      target: { role: 'heading', name: { en: name, fr: name } },
+    });
     expect((await d.attempt(probe('/', heading('Visible')), ctx(p, {}))).ok).toBe(true);
     const ghost = await d.attempt(probe('/', heading('Ghost')), ctx(p, {}));
     expect(ghost.error).toBe('step 2: no heading named "Ghost"');

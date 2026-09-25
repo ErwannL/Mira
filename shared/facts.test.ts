@@ -8,9 +8,21 @@ describe('facts', () => {
   });
   it('merges: max sizes, summed counts, OR flags', () => {
     const a = emptyFacts({ visibleFields: 4, clicksToGoal: 1, networkErrors: 1, captcha: true });
-    const b = emptyFacts({ visibleFields: 2, clicksToGoal: 2, networkErrors: 2, paywall: true, targetUnnamed: true });
+    const b = emptyFacts({
+      visibleFields: 2,
+      clicksToGoal: 2,
+      networkErrors: 2,
+      paywall: true,
+      targetUnnamed: true,
+    });
     const m = mergeFacts(a, b);
-    expect(m).toMatchObject({ visibleFields: 4, clicksToGoal: 3, networkErrors: 3, captcha: true, paywall: true });
+    expect(m).toMatchObject({
+      visibleFields: 4,
+      clicksToGoal: 3,
+      networkErrors: 3,
+      captcha: true,
+      paywall: true,
+    });
     expect(m.targetUnnamed).toBe(true);
     expect(mergeFacts(b, a).captcha).toBe(true);
   });

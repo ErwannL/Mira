@@ -6,13 +6,7 @@
   "device": "desktop",
   "timezone": "America/Chicago",
   "goal": "Personal task board usable with a screen reader",
-  "goalFeatures": [
-    "create-board",
-    "create-list",
-    "create-card",
-    "edit-card",
-    "comment"
-  ],
+  "goalFeatures": ["create-board", "create-list", "create-card", "edit-card", "comment"],
   "urgency": 0.5,
   "techSavvy": 0.7,
   "readingTolerance": 0.7,
@@ -30,15 +24,7 @@
   "privacyConcern": 0.5,
   "activityLevel": 0.5,
   "sessionsPerWeek": 5,
-  "activeHours": [
-    9,
-    10,
-    11,
-    13,
-    14,
-    15,
-    16
-  ],
+  "activeHours": [9, 10, 11, 13, 14, 15, 16],
   "sessionLengthMin": 25,
   "populationWeight": 0.04,
   "assistive": {

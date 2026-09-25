@@ -36,7 +36,13 @@ export const PRESETS: Record<string, Scenario> = {
   /** A/B "B" side: shorter onboarding, no cookie wall, everything clear. */
   improved: { ...baseline, cookieBanner: false },
   /** The signup a volunteer should not get through. */
-  'unclear-signup': { ...baseline, extraSignupFields: 4, unclearErrors: true, captcha: true, longOnboarding: true },
+  'unclear-signup': {
+    ...baseline,
+    extraSignupFields: 4,
+    unclearErrors: true,
+    captcha: true,
+    longOnboarding: true,
+  },
   inaccessible: { ...baseline, unnamedControls: true },
   untranslated: { ...baseline, untranslated: true },
   slow: { ...baseline, slowMs: 4000 },

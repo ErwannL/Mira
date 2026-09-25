@@ -6,12 +6,7 @@
   "device": "mobile",
   "timezone": "Europe/Paris",
   "goal": "A shared to-do list for the association volunteers",
-  "goalFeatures": [
-    "create-board",
-    "create-list",
-    "create-card",
-    "invite-without-account"
-  ],
+  "goalFeatures": ["create-board", "create-list", "create-card", "invite-without-account"],
   "urgency": 0.4,
   "techSavvy": 0.1,
   "readingTolerance": 0.15,
@@ -29,13 +24,7 @@
   "privacyConcern": 0.9,
   "activityLevel": 0.3,
   "sessionsPerWeek": 2,
-  "activeHours": [
-    9,
-    10,
-    11,
-    17,
-    18
-  ],
+  "activeHours": [9, 10, 11, 17, 18],
   "sessionLengthMin": 10,
   "populationWeight": 0.08
 }

@@ -12,7 +12,12 @@ export function pickMistakes(useCase: UseCase, persona: Persona, prng: Prng): Mi
  * After an error page, the persona fixes each mistake if the message was clear; with an unclear
  * message it only guesses right with probability techSavvy.
  */
-export function fixMistakes(mistakes: Mistake[], unclear: boolean, persona: Persona, prng: Prng): Mistake[] {
+export function fixMistakes(
+  mistakes: Mistake[],
+  unclear: boolean,
+  persona: Persona,
+  prng: Prng,
+): Mistake[] {
   if (!unclear) return [];
   return mistakes.filter(() => !prng.chance(persona.techSavvy));
 }

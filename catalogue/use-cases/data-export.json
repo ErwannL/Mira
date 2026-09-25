@@ -5,9 +5,7 @@
     "fr": "Exporter mes données"
   },
   "area": "settings",
-  "requires": [
-    "login"
-  ],
+  "requires": ["login"],
   "planGate": "export",
   "minutes": 1,
   "ui": [

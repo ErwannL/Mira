@@ -6,12 +6,23 @@ import { decide, type DecisionInput } from './decide.js';
 
 const pm = persona('project-manager');
 const none = { score: 0, reasons: [], hardBlock: null };
-const base: DecisionInput = { frustration: 0, friction: none, stepFailed: false, attempts: 1, critical: true };
+const base: DecisionInput = {
+  frustration: 0,
+  friction: none,
+  stepFailed: false,
+  attempts: 1,
+  critical: true,
+};
 const fixed = (v: number) => ({ ...createPrng(1), next: () => v });
 
 describe('decide', () => {
   it('hard blocks abandon whatever the frustration', () => {
-    const d = decide({ ...base, friction: { ...none, hardBlock: 'x' } }, pm, weights, createPrng(1));
+    const d = decide(
+      { ...base, friction: { ...none, hardBlock: 'x' } },
+      pm,
+      weights,
+      createPrng(1),
+    );
     expect(d).toEqual({ action: 'abandon', rule: 'hard block: x' });
   });
   it('abandons at or above tolerance, naming the numbers', () => {
@@ -29,7 +40,9 @@ describe('decide', () => {
   });
   it('abandons a critical step or skips an optional one when the roll fails', () => {
     expect(decide({ ...base, stepFailed: true }, pm, weights, fixed(0.99)).action).toBe('abandon');
-    expect(decide({ ...base, stepFailed: true, critical: false }, pm, weights, fixed(0.99)).action).toBe('skip');
+    expect(
+      decide({ ...base, stepFailed: true, critical: false }, pm, weights, fixed(0.99)).action,
+    ).toBe('skip');
   });
   it('stops retrying after maxRetries', () => {
     const tired = { ...base, stepFailed: true, attempts: weights.maxRetries + 1 };
@@ -45,7 +58,9 @@ describe('decide', () => {
         fc.constantFrom(...personas),
         (seed, frustration, failed, p) => {
           const input = { ...base, frustration, stepFailed: failed };
-          expect(decide(input, p, weights, createPrng(seed))).toEqual(decide(input, p, weights, createPrng(seed)));
+          expect(decide(input, p, weights, createPrng(seed))).toEqual(
+            decide(input, p, weights, createPrng(seed)),
+          );
         },
       ),
     );

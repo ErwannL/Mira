@@ -2,7 +2,8 @@
 const en = {
   brand: 'Orqea',
   tagline: 'Boards, lists and cards for teams that like things tidy.',
-  pitch: 'Plan projects, share to-dos with your team, collect answers with forms and automate the boring parts. Free to start.',
+  pitch:
+    'Plan projects, share to-dos with your team, collect answers with forms and automate the boring parts. Free to start.',
   signUp: 'Sign up',
   logIn: 'Log in',
   email: 'Email',
@@ -143,7 +144,8 @@ export type Key = keyof typeof en;
 const fr: Record<Key, string> = {
   brand: 'Orqea',
   tagline: 'Tableaux, listes et cartes pour les équipes qui aiment l’ordre.',
-  pitch: 'Planifiez vos projets, partagez les tâches avec votre équipe, collectez des réponses avec des formulaires et automatisez le reste. Gratuit pour commencer.',
+  pitch:
+    'Planifiez vos projets, partagez les tâches avec votre équipe, collectez des réponses avec des formulaires et automatisez le reste. Gratuit pour commencer.',
   signUp: 'Créer un compte',
   logIn: 'Se connecter',
   email: 'Adresse e-mail',
@@ -280,7 +282,14 @@ const fr: Record<Key, string> = {
 };
 
 export type Lang = 'en' | 'fr';
-export const EXTRA_FIELDS: Key[] = ['extra_firstName', 'extra_lastName', 'extra_phone', 'extra_company', 'extra_jobTitle', 'extra_country'];
+export const EXTRA_FIELDS: Key[] = [
+  'extra_firstName',
+  'extra_lastName',
+  'extra_phone',
+  'extra_company',
+  'extra_jobTitle',
+  'extra_country',
+];
 
 /** Translator; `untranslated` simulates a French page left in English. */
 export function translator(lang: Lang, untranslated: boolean): (k: Key) => string {

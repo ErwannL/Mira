@@ -5,9 +5,7 @@
     "fr": "Modifier une carte"
   },
   "area": "cards",
-  "requires": [
-    "create-card"
-  ],
+  "requires": ["create-card"],
   "planGate": "free",
   "minutes": 2,
   "ui": [

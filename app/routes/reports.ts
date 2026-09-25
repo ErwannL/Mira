@@ -15,12 +15,23 @@ const KINDS = new Set(['funnel', 'load', 'pricing', 'calibration']);
 const FILE = /^[A-Za-z0-9_-]+\.jpg$/;
 const RUN = /^[0-9a-z]+$/;
 
-export function reportRoutes(app: FastifyInstance, cfg: AppConfig, db: Db): void {
-  const image = (runId: string) => (file: string): string | null => {
-    const path = join(cfg.screenshotsDir, runId, file);
-    return FILE.test(file) && existsSync(path) ? `data:image/jpeg;base64,${readFileSync(path).toString('base64')}` : null;
-  };
-  const send = (reply: FastifyReply, report: AnyReport, runId: string, format: string, lang: Locale, name: string) => {
+function reportHelpers(cfg: AppConfig) {
+  const image =
+    (runId: string) =>
+    (file: string): string | null => {
+      const path = join(cfg.screenshotsDir, runId, file);
+      return FILE.test(file) && existsSync(path)
+        ? `data:image/jpeg;base64,${readFileSync(path).toString('base64')}`
+        : null;
+    };
+  const send = (
+    reply: FastifyReply,
+    report: AnyReport,
+    runId: string,
+    format: string,
+    lang: Locale,
+    name: string,
+  ) => {
     if (format === 'html') {
       return reply
         .header('content-security-policy', REPORT_CSP)
@@ -28,14 +39,28 @@ export function reportRoutes(app: FastifyInstance, cfg: AppConfig, db: Db): void
         .type('text/html')
         .send(renderReportHtml(report, lang, image(runId)));
     }
-    return reply.header('content-disposition', `attachment; filename="figura-${name}.json"`).send(report);
+    return reply
+      .header('content-disposition', `attachment; filename="figura-${name}.json"`)
+      .send(report);
   };
   const langOf = (q: unknown): Locale => ((q as { lang?: string }).lang === 'fr' ? 'fr' : 'en');
 
+  return { send, langOf };
+}
+type H = ReturnType<typeof reportHelpers>;
+
+export function reportRoutes(app: FastifyInstance, cfg: AppConfig, db: Db): void {
+  const h = reportHelpers(cfg);
+  reportRoutes1(app, cfg, db, h);
+}
+
+function reportRoutes1(app: FastifyInstance, cfg: AppConfig, db: Db, h: H): void {
+  const { send, langOf } = h;
   app.get('/api/runs/:id/reports/:kind', async (req, reply) => {
     const { id, kind } = req.params as { id: string; kind: string };
     const [name, format = 'json'] = kind.split('.') as [string, string | undefined];
-    if (!KINDS.has(name) || !['json', 'html'].includes(format)) return reply.code(404).send({ error: 'NOT_FOUND' });
+    if (!KINDS.has(name) || !['json', 'html'].includes(format))
+      return reply.code(404).send({ error: 'NOT_FOUND' });
     const report = await getReport<AnyReport>(db, id, name);
     if (!report) return reply.code(404).send({ error: 'NOT_FOUND' });
     return send(reply, report, id, format, langOf(req.query), `${id}-${name}`);
@@ -44,7 +69,8 @@ export function reportRoutes(app: FastifyInstance, cfg: AppConfig, db: Db): void
   app.get('/api/runs/:id/screenshots/:file', async (req, reply) => {
     const { id, file } = req.params as { id: string; file: string };
     const path = join(cfg.screenshotsDir, id, file);
-    if (!RUN.test(id) || !FILE.test(file) || !existsSync(path)) return reply.code(404).send({ error: 'NOT_FOUND' });
+    if (!RUN.test(id) || !FILE.test(file) || !existsSync(path))
+      return reply.code(404).send({ error: 'NOT_FOUND' });
     return reply.type('image/jpeg').send(readFileSync(path));
   });
 
@@ -57,7 +83,9 @@ export function reportRoutes(app: FastifyInstance, cfg: AppConfig, db: Db): void
     try {
       real = parseAggregates(String(text ?? ''));
     } catch (e) {
-      return reply.code(400).send({ error: 'INVALID_AGGREGATES', message: (e as Error).message.slice(0, 500) });
+      return reply
+        .code(400)
+        .send({ error: 'INVALID_AGGREGATES', message: (e as Error).message.slice(0, 500) });
     }
     const report = buildCalibration(funnel, real);
     await saveCalibration(db, id, req.operator, real);
@@ -68,9 +96,21 @@ export function reportRoutes(app: FastifyInstance, cfg: AppConfig, db: Db): void
 
   app.get('/api/compare', async (req, reply) => {
     const q = req.query as { a?: string; b?: string; format?: string };
-    const [a, b] = await Promise.all([getReport<FunnelReport>(db, q.a ?? '', 'funnel'), getReport<FunnelReport>(db, q.b ?? '', 'funnel')]);
+    const [a, b] = await Promise.all([
+      getReport<FunnelReport>(db, q.a ?? '', 'funnel'),
+      getReport<FunnelReport>(db, q.b ?? '', 'funnel'),
+    ]);
     if (!a || !b) return reply.code(404).send({ error: 'NO_FUNNEL_REPORT' });
     const report = buildComparison(a, b);
-    return q.format === 'html' ? send(reply, report, a.meta.runId, 'html', langOf(req.query), `${a.meta.runId}-vs-${b.meta.runId}`) : report;
+    return q.format === 'html'
+      ? send(
+          reply,
+          report,
+          a.meta.runId,
+          'html',
+          langOf(req.query),
+          `${a.meta.runId}-vs-${b.meta.runId}`,
+        )
+      : report;
   });
 }

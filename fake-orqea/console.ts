@@ -15,11 +15,17 @@ export function consolePages(app: FastifyInstance, deps: Deps): void {
       return reply.code(404).send({ error: 'NOT_FOUND' });
     }
   };
-  const token = () => mintSsoToken(config.ssoSecret, config.appId, 'Fake console operator', config.nowS());
+  const token = () =>
+    mintSsoToken(config.ssoSecret, config.appId, 'Fake console operator', config.nowS());
   const appLink = () => `${config.appUrl}/#sso=${token()}`;
 
-  app.get('/console/token', { preHandler: localOnly }, async () => ({ token: token(), expiresIn: SSO_TTL_S }));
-  app.get('/console/open', { preHandler: localOnly }, async (_req, reply) => reply.redirect(appLink()));
+  app.get('/console/token', { preHandler: localOnly }, async () => ({
+    token: token(),
+    expiresIn: SSO_TTL_S,
+  }));
+  app.get('/console/open', { preHandler: localOnly }, async (_req, reply) =>
+    reply.redirect(appLink()),
+  );
   app.get('/console', { preHandler: localOnly }, async (_req, reply) => {
     const src = esc(appLink());
     const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Orqea admin console (fake)</title>

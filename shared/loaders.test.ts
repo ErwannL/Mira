@@ -58,7 +58,9 @@ describe('loadCatalogue', () => {
     expect(catalogue.useCases).toHaveLength(30);
   });
   it('rejects invalid files, bad names, unknown requirements and cycles', () => {
-    expect(() => loadCatalogue(writeCatalogue([{ ...landing, minutes: -1 }]))).toThrow('Invalid use case');
+    expect(() => loadCatalogue(writeCatalogue([{ ...landing, minutes: -1 }]))).toThrow(
+      'Invalid use case',
+    );
     const misnamed = writeCatalogue([]);
     writeFileSync(join(misnamed, 'use-cases', 'other.json'), JSON.stringify(landing));
     expect(() => loadCatalogue(misnamed)).toThrow('must be named after its id');
@@ -76,7 +78,15 @@ describe('loadCatalogue', () => {
 describe('orderWithPrerequisites', () => {
   it('orders prerequisites first, once each', () => {
     const ids = orderWithPrerequisites(catalogue, ['create-card', 'create-list']).map((u) => u.id);
-    expect(ids).toEqual(['landing', 'signup', 'verify-email', 'login', 'create-board', 'create-card', 'create-list']);
+    expect(ids).toEqual([
+      'landing',
+      'signup',
+      'verify-email',
+      'login',
+      'create-board',
+      'create-card',
+      'create-list',
+    ]);
   });
   it('rejects unknown goals', () => {
     expect(() => orderWithPrerequisites(catalogue, ['nope'])).toThrow('Unknown use case nope');
@@ -86,8 +96,8 @@ describe('orderWithPrerequisites', () => {
 describe('checkPersonasAgainstCatalogue', () => {
   it('accepts the shipped set and rejects unknown goals', () => {
     expect(() => checkPersonasAgainstCatalogue(personas, catalogue)).not.toThrow();
-    expect(() => checkPersonasAgainstCatalogue([{ ...base, goalFeatures: ['zzz'] }], catalogue)).toThrow(
-      'unknown goal feature zzz',
-    );
+    expect(() =>
+      checkPersonasAgainstCatalogue([{ ...base, goalFeatures: ['zzz'] }], catalogue),
+    ).toThrow('unknown goal feature zzz');
   });
 });

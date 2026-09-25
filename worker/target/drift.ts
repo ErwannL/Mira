@@ -3,10 +3,16 @@ import type { Endpoint } from './client.js';
 
 /** "/api/boards/{{boardId}}/lists?x=1" and "/api/boards/:boardId/lists" both → "/api/boards/:*\/lists". */
 export function normalisePath(path: string): string {
-  return path.split('?')[0]!.replace(/\{\{\w+\}\}|:\w+/g, ':*').replace(/\/$/, '') || '/';
+  return (
+    path
+      .split('?')[0]!
+      .replace(/\{\{\w+\}\}|:\w+/g, ':*')
+      .replace(/\/$/, '') || '/'
+  );
 }
 
-export const key = (method: string, path: string): string => `${method.toUpperCase()} ${normalisePath(path)}`;
+export const key = (method: string, path: string): string =>
+  `${method.toUpperCase()} ${normalisePath(path)}`;
 
 export interface DriftReport {
   missing: { useCase: string; method: string; path: string }[];
@@ -26,6 +32,8 @@ export function checkDrift(catalogue: Catalogue, endpoints: Endpoint[]): DriftRe
     }
   }
   // Contract endpoints (admin API, the endpoint list itself) are not product use cases.
-  const uncatalogued = [...available].filter((k) => !used.has(k) && !k.includes('/api/admin/') && k !== 'GET /api').sort();
+  const uncatalogued = [...available]
+    .filter((k) => !used.has(k) && !k.includes('/api/admin/') && k !== 'GET /api')
+    .sort();
   return { missing, uncatalogued };
 }

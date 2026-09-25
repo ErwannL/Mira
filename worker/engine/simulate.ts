@@ -29,7 +29,8 @@ export interface SimulationSummary {
 async function loadLife(persona: Persona, seed: number, deps: SimulationDeps): Promise<Life> {
   const prng = createPrng(seed).fork(persona.id);
   const stored = await deps.memoryStore.load(persona.id);
-  if (stored?.credentials) return { persona, prng, memory: stored.memory, credentials: stored.credentials };
+  if (stored?.credentials)
+    return { persona, prng, memory: stored.memory, credentials: stored.credentials };
   const credentials = deps.newCredentials(persona);
   const memory = newMemory(persona, deps.initialVars(persona));
   await deps.memoryStore.save(memory, credentials);
@@ -37,7 +38,10 @@ async function loadLife(persona: Persona, seed: number, deps: SimulationDeps): P
 }
 
 /** Runs rounds of simulated time; each active persona lives one real browser/API session. */
-export async function simulate(plan: SimulationPlan, deps: SimulationDeps): Promise<SimulationSummary> {
+export async function simulate(
+  plan: SimulationPlan,
+  deps: SimulationDeps,
+): Promise<SimulationSummary> {
   const lives: Life[] = [];
   for (const p of plan.personas) lives.push(await loadLife(p, plan.seed, deps));
   const times = roundTimes(plan.start, plan.totalSimulatedDays, plan.minutesPerRound);
@@ -48,7 +52,13 @@ export async function simulate(plan: SimulationPlan, deps: SimulationDeps): Prom
     rounds += 1;
     for (const life of lives) {
       if (isFinal(life.memory) || deps.shouldStop()) continue;
-      const check = isActive(life.persona, at, plan.minutesPerRound, plan.timeConfig, life.prng.fork(`round-${i}`));
+      const check = isActive(
+        life.persona,
+        at,
+        plan.minutesPerRound,
+        plan.timeConfig,
+        life.prng.fork(`round-${i}`),
+      );
       if (!check.active) continue;
       sessions += 1;
       await runSession(life, at, deps);

@@ -5,7 +5,8 @@ export class RateLimiter {
   constructor(
     private readonly perSecond: number,
     private readonly now: () => number = Date.now,
-    private readonly sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+    private readonly sleep: (ms: number) => Promise<void> = (ms) =>
+      new Promise((r) => setTimeout(r, ms)),
   ) {
     if (!(perSecond > 0)) throw new Error('perSecond must be > 0');
     this.tokens = perSecond;
@@ -15,7 +16,10 @@ export class RateLimiter {
   async take(): Promise<void> {
     for (;;) {
       const t = this.now();
-      this.tokens = Math.min(this.perSecond, this.tokens + ((t - this.last) / 1000) * this.perSecond);
+      this.tokens = Math.min(
+        this.perSecond,
+        this.tokens + ((t - this.last) / 1000) * this.perSecond,
+      );
       this.last = t;
       if (this.tokens >= 1) {
         this.tokens -= 1;

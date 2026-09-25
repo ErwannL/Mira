@@ -5,9 +5,7 @@
     "fr": "Vérifier l'e-mail"
   },
   "area": "acquisition",
-  "requires": [
-    "signup"
-  ],
+  "requires": ["signup"],
   "planGate": "free",
   "minutes": 1,
   "ui": [
@@ -30,9 +28,7 @@
       "method": "GET",
       "path": "/api/auth/verify-email?token={{verifyToken}}",
       "auth": false,
-      "expectStatus": [
-        200
-      ]
+      "expectStatus": [200]
     }
   ],
   "success": {

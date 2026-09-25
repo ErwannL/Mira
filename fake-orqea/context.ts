@@ -38,7 +38,11 @@ export function bearer(req: FastifyRequest): string | undefined {
 }
 
 export function ctxOf(req: FastifyRequest, deps: Deps): Ctx {
-  const runId = verifyRunHeader(req.headers[RUN_HEADER] as string | undefined, deps.config.serviceSecret, deps.config.nowS());
+  const runId = verifyRunHeader(
+    req.headers[RUN_HEADER] as string | undefined,
+    deps.config.serviceSecret,
+    deps.config.nowS(),
+  );
   const scenario = deps.scenarios.get(runId);
   const user = deps.store.userByToken(bearer(req));
   const lang = pickLang(req.headers['accept-language'], user?.language);

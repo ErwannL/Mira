@@ -3,23 +3,48 @@ import { emptyFacts } from '../../shared/facts.js';
 import { createPrng } from '../../shared/prng.js';
 import { catalogue, persona } from '../../shared/test-helpers/fixtures.js';
 import { journeyDeps, ScriptedDriver } from '../test-helpers/scripted.js';
-import { checkoutAllowed, isFinal, neededFeatures, newMemory, runSession, type Life } from './journey.js';
+import {
+  checkoutAllowed,
+  isFinal,
+  neededFeatures,
+  newMemory,
+  runSession,
+  type Life,
+} from './journey.js';
 import type { Persona } from '../../shared/persona-schema.js';
 
 const sim = new Date('2030-01-06T09:00:00Z');
 function life(p: Persona, seed = 1): Life {
-  return { persona: p, prng: createPrng(seed).fork(p.id), memory: newMemory(p, { boardName: 'B', cardTitle: 'C' }), credentials: { email: `synth+r1-${p.id}@synthetic.invalid`, password: 'Str0ng!pass' } };
+  return {
+    persona: p,
+    prng: createPrng(seed).fork(p.id),
+    memory: newMemory(p, { boardName: 'B', cardTitle: 'C' }),
+    credentials: { email: `synth+r1-${p.id}@synthetic.invalid`, password: 'Str0ng!pass' },
+  };
 }
-const calm: Persona = { ...persona('project-manager'), errorProneness: 0, curiosity: 0, sessionLengthMin: 999 };
+const calm: Persona = {
+  ...persona('project-manager'),
+  errorProneness: 0,
+  curiosity: 0,
+  sessionLengthMin: 999,
+};
 
 describe('runSession', () => {
   it('lives a frictionless life to the end, in prerequisite order', async () => {
-    const driver = new ScriptedDriver((uc) => (uc.id === 'create-board' ? { captured: { boardId: 'b1' }, pages: ['/boards'] } : {}));
+    const driver = new ScriptedDriver((uc) =>
+      uc.id === 'create-board' ? { captured: { boardId: 'b1' }, pages: ['/boards'] } : {},
+    );
     const { deps, events } = journeyDeps(driver);
     const l = life(calm);
     await runSession(l, sim, deps);
     expect(l.memory.stage).toBe('done');
-    expect(driver.calls.map((c) => c.id).slice(0, 5)).toEqual(['landing', 'signup', 'verify-email', 'login', 'onboarding']);
+    expect(driver.calls.map((c) => c.id).slice(0, 5)).toEqual([
+      'landing',
+      'signup',
+      'verify-email',
+      'login',
+      'onboarding',
+    ]);
     expect(l.memory.vars.boardId).toBe('b1');
     expect(l.memory.vars.verifyToken).toBe(`tok-${l.credentials.email}`);
     expect(l.memory.pagesSeen).toEqual(['/boards']);
@@ -36,7 +61,15 @@ describe('runSession', () => {
     const volunteer = { ...persona('retired-volunteer'), errorProneness: 0 };
     const run = async (fields: number) => {
       const driver = new ScriptedDriver((uc) =>
-        uc.id === 'signup' ? { facts: emptyFacts({ visibleFields: fields, requiredFields: fields, termsCheckbox: true }) } : {},
+        uc.id === 'signup'
+          ? {
+              facts: emptyFacts({
+                visibleFields: fields,
+                requiredFields: fields,
+                termsCheckbox: true,
+              }),
+            }
+          : {},
       );
       const l = life(volunteer);
       await runSession(l, sim, journeyDeps(driver).deps);
@@ -54,7 +87,11 @@ describe('runSession', () => {
     const script = (unclear: number) =>
       new ScriptedDriver((uc, ctx) =>
         uc.id === 'signup' && ctx.mistakes.length > 0
-          ? { ok: false, error: 'validation', facts: emptyFacts({ validationErrors: 1, unclearErrors: unclear }) }
+          ? {
+              ok: false,
+              error: 'validation',
+              facts: emptyFacts({ validationErrors: 1, unclearErrors: unclear }),
+            }
           : {},
       );
     const clear = life(proneTo, 3);
@@ -82,12 +119,20 @@ describe('runSession', () => {
     const { deps, events } = journeyDeps(driver);
     const l = life({ ...calm, recoveryWillingness: 0 });
     await runSession(l, sim, deps);
-    expect(events.find((e) => e.useCaseId === 'create-card')!.rule).toBe('skipped: prerequisite create-board not met');
+    expect(events.find((e) => e.useCaseId === 'create-card')!.rule).toBe(
+      'skipped: prerequisite create-board not met',
+    );
   });
 
   it('paywall: convert is recorded and the locked step skipped; checkout then runs when enabled', async () => {
     const driver = new ScriptedDriver((uc) =>
-      uc.id === 'automation-rule' ? { ok: false, paywall: { code: 'FEATURE_LOCKED', featureKey: 'automation' }, facts: emptyFacts({ paywall: true }) } : {},
+      uc.id === 'automation-rule'
+        ? {
+            ok: false,
+            paywall: { code: 'FEATURE_LOCKED', featureKey: 'automation' },
+            facts: emptyFacts({ paywall: true }),
+          }
+        : {},
     );
     const { deps, events } = journeyDeps(driver, { allowCheckout: true });
     const l = life(calm);
@@ -104,7 +149,9 @@ describe('runSession', () => {
   it('paywall churn ends the life; pricing page defer continues', async () => {
     const broke = { ...calm, budget: 0, valueThreshold: 1 };
     const driver = new ScriptedDriver((uc) =>
-      uc.id === 'automation-rule' ? { ok: false, paywall: { code: 'FEATURE_LOCKED', featureKey: 'automation' } } : {},
+      uc.id === 'automation-rule'
+        ? { ok: false, paywall: { code: 'FEATURE_LOCKED', featureKey: 'automation' } }
+        : {},
     );
     const l = life(broke);
     await runSession(l, sim, journeyDeps(driver).deps);
@@ -116,7 +163,13 @@ describe('runSession', () => {
 
   it('paywall on an already frustrated persona abandons', async () => {
     const driver = new ScriptedDriver((uc) =>
-      uc.id === 'automation-rule' ? { ok: false, paywall: { code: 'PLAN_LIMIT', featureKey: 'automation' }, facts: emptyFacts({ networkErrors: 4 }) } : {},
+      uc.id === 'automation-rule'
+        ? {
+            ok: false,
+            paywall: { code: 'PLAN_LIMIT', featureKey: 'automation' },
+            facts: emptyFacts({ networkErrors: 4 }),
+          }
+        : {},
     );
     const l = life(calm);
     await runSession(l, sim, journeyDeps(driver).deps);
@@ -167,14 +220,23 @@ describe('runSession', () => {
   });
 
   it('computes needed paid features from goals', () => {
-    expect(neededFeatures(persona('project-manager'), catalogue).sort()).toEqual(['automation', 'bulk']);
+    expect(neededFeatures(persona('project-manager'), catalogue).sort()).toEqual([
+      'automation',
+      'bulk',
+    ]);
     expect(neededFeatures(persona('retired-volunteer'), catalogue)).toEqual([]);
   });
 
   it('a verify URL without token yields an empty token', async () => {
     const driver = new ScriptedDriver();
     const l = life({ ...calm, sessionLengthMin: 5 });
-    await runSession(l, sim, journeyDeps(driver, { target: { requestVerifyUrl: async () => 'http://t/verify', plans: async () => [] } }).deps);
+    await runSession(
+      l,
+      sim,
+      journeyDeps(driver, {
+        target: { requestVerifyUrl: async () => 'http://t/verify', plans: async () => [] },
+      }).deps,
+    );
     expect(l.memory.vars.verifyToken).toBe('');
   });
 });

@@ -1,7 +1,15 @@
 import { emptyFacts, type Facts } from '../../shared/facts.js';
 import type { UseCase } from '../../shared/catalogue-schema.js';
 import type { Plan } from '../../shared/plans.js';
-import type { AttemptContext, Driver, JourneyEvent, Memory, MemoryStore, Credentials, StepOutcome } from '../engine/types.js';
+import type {
+  AttemptContext,
+  Driver,
+  JourneyEvent,
+  Memory,
+  MemoryStore,
+  Credentials,
+  StepOutcome,
+} from '../engine/types.js';
 import type { JourneyDeps } from '../engine/journey.js';
 import { catalogue, weights } from '../../shared/test-helpers/fixtures.js';
 
@@ -37,7 +45,14 @@ export class ScriptedDriver implements Driver {
 
 export const testPlans: Plan[] = [
   { key: 'free', name: 'Free', priceMonthly: 0, currency: 'EUR', perSeat: false, features: [] },
-  { key: 'pro', name: 'Pro', priceMonthly: 9, currency: 'EUR', perSeat: false, features: ['automation', 'qr', 'bulk', 'export'] },
+  {
+    key: 'pro',
+    name: 'Pro',
+    priceMonthly: 9,
+    currency: 'EUR',
+    perSeat: false,
+    features: ['automation', 'qr', 'bulk', 'export'],
+  },
 ];
 
 export class MemStore implements MemoryStore {

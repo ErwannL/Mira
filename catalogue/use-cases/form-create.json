@@ -5,9 +5,7 @@
     "fr": "Créer un formulaire"
   },
   "area": "forms",
-  "requires": [
-    "login"
-  ],
+  "requires": ["login"],
   "planGate": "free",
   "minutes": 3,
   "ui": [
@@ -64,17 +62,13 @@
       "path": "/api/forms",
       "body": {
         "title": "Registration",
-        "questions": [
-          "Your name?"
-        ]
+        "questions": ["Your name?"]
       },
       "auth": true,
       "save": {
         "formId": "id"
       },
-      "expectStatus": [
-        201
-      ]
+      "expectStatus": [201]
     }
   ],
   "success": {

@@ -19,8 +19,15 @@ export const loggerOptions = {
   },
 };
 
-export async function buildApp(cfg: AppConfig, deps: { db: Db; data: SimData; nowS: () => number; logger: boolean; ownsDb?: boolean }): Promise<FastifyInstance> {
-  const app = Fastify({ logger: deps.logger ? loggerOptions : false, bodyLimit: 1_000_000, trustProxy: false });
+export async function buildApp(
+  cfg: AppConfig,
+  deps: { db: Db; data: SimData; nowS: () => number; logger: boolean; ownsDb?: boolean },
+): Promise<FastifyInstance> {
+  const app = Fastify({
+    logger: deps.logger ? loggerOptions : false,
+    bodyLimit: 1_000_000,
+    trustProxy: false,
+  });
   await app.register(cookie);
   securityHooks(app, { loopbackOnly: cfg.loopbackOnly, consoleOrigins: cfg.consoleOrigins });
   app.get('/health', async () => {

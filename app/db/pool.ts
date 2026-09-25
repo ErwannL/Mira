@@ -14,9 +14,17 @@ export async function migrate(db: Db, dir: string): Promise<string[]> {
   const applied: string[] = [];
   try {
     await client.query('select pg_advisory_lock(424242)');
-    await client.query('create table if not exists schema_migrations (name text primary key, applied_at timestamptz not null default now())');
-    const done = new Set((await client.query<{ name: string }>('select name from schema_migrations')).rows.map((r) => r.name));
-    for (const file of readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()) {
+    await client.query(
+      'create table if not exists schema_migrations (name text primary key, applied_at timestamptz not null default now())',
+    );
+    const done = new Set(
+      (await client.query<{ name: string }>('select name from schema_migrations')).rows.map(
+        (r) => r.name,
+      ),
+    );
+    for (const file of readdirSync(dir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort()) {
       if (done.has(file)) continue;
       await client.query('begin');
       try {

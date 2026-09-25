@@ -5,9 +5,7 @@
     "fr": "Recherche globale"
   },
   "area": "navigation",
-  "requires": [
-    "create-card"
-  ],
+  "requires": ["create-card"],
   "planGate": "free",
   "minutes": 1,
   "ui": [

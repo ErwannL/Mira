@@ -5,9 +5,7 @@
     "fr": "Créer un QR code"
   },
   "area": "sharing",
-  "requires": [
-    "login"
-  ],
+  "requires": ["login"],
   "planGate": "qr",
   "minutes": 1,
   "ui": [
@@ -55,9 +53,7 @@
         "url": "https://example.org"
       },
       "auth": true,
-      "expectStatus": [
-        201
-      ]
+      "expectStatus": [201]
     }
   ],
   "success": {

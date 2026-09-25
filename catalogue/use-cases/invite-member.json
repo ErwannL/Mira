@@ -5,9 +5,7 @@
     "fr": "Inviter un membre"
   },
   "area": "collaboration",
-  "requires": [
-    "create-board"
-  ],
+  "requires": ["create-board"],
   "planGate": "free",
   "minutes": 2,
   "ui": [
@@ -76,9 +74,7 @@
         "email": "{{inviteEmail}}"
       },
       "auth": true,
-      "expectStatus": [
-        201
-      ]
+      "expectStatus": [201]
     }
   ],
   "success": {

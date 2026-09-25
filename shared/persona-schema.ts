@@ -46,7 +46,12 @@ export const timeConfigSchema = z
     peakHours: z.array(hour),
     workHours: z.array(hour),
     morningHours: z.array(hour),
-    multipliers: z.object({ peak: z.number(), work: z.number(), morning: z.number(), offPeak: z.number() }),
+    multipliers: z.object({
+      peak: z.number(),
+      work: z.number(),
+      morning: z.number(),
+      offPeak: z.number(),
+    }),
     outsideActiveHoursFactor: unit,
   })
   .strict();

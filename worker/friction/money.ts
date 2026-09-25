@@ -26,14 +26,24 @@ export function costFor(plan: Plan, persona: Persona): number {
   return round(plan.perSeat ? plan.priceMonthly * persona.teamSize : plan.priceMonthly);
 }
 
-export function decideMoney(encounter: MoneyEncounter, plans: Plan[], persona: Persona): MoneyOutcome {
+export function decideMoney(
+  encounter: MoneyEncounter,
+  plans: Plan[],
+  persona: Persona,
+): MoneyOutcome {
   const wanted = encounter.featureKey ? [encounter.featureKey] : encounter.neededFeatures;
   const candidates = plans
     .filter((p) => p.priceMonthly > 0 && wanted.some((f) => p.features.includes(f)))
     .sort((a, b) => costFor(a, persona) - costFor(b, persona));
   const plan = candidates[0];
   if (!plan) {
-    return { decision: 'defer', planKey: null, monthlyCost: 0, perceivedValue: 0, rule: 'no paid plan answers a need' };
+    return {
+      decision: 'defer',
+      planKey: null,
+      monthlyCost: 0,
+      perceivedValue: 0,
+      rule: 'no paid plan answers a need',
+    };
   }
   const need = wanted.some((f) => encounter.neededFeatures.includes(f)) ? 1 : 0.3;
   const perceivedValue = round(need * (0.5 + 0.3 * encounter.satisfaction + 0.2 * persona.urgency));
@@ -42,10 +52,18 @@ export function decideMoney(encounter: MoneyEncounter, plans: Plan[], persona: P
   const base = { planKey: plan.key, monthlyCost: cost, perceivedValue };
   if (cost > stretch) {
     const decision = perceivedValue >= persona.valueThreshold ? 'defer' : 'churn';
-    return { ...base, decision, rule: `cost ${cost} > stretch budget ${stretch}; value ${perceivedValue} vs threshold ${persona.valueThreshold} ⇒ ${decision}` };
+    return {
+      ...base,
+      decision,
+      rule: `cost ${cost} > stretch budget ${stretch}; value ${perceivedValue} vs threshold ${persona.valueThreshold} ⇒ ${decision}`,
+    };
   }
   const decision = perceivedValue >= persona.valueThreshold ? 'convert' : 'defer';
-  return { ...base, decision, rule: `cost ${cost} ≤ stretch budget ${stretch}; value ${perceivedValue} vs threshold ${persona.valueThreshold} ⇒ ${decision}` };
+  return {
+    ...base,
+    decision,
+    rule: `cost ${cost} ≤ stretch budget ${stretch}; value ${perceivedValue} vs threshold ${persona.valueThreshold} ⇒ ${decision}`,
+  };
 }
 
 /** Re-prices a plan list for a pricing scenario (operator alternatives). */

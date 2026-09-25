@@ -25,12 +25,17 @@ function secret(env: Env, key: string): string {
 export function appConfigFromEnv(env: Env, defaults: { uiDir: string }): AppConfig {
   const sessionSecret = secret(env, 'FIGURA_SESSION_SECRET');
   const ssoSecret = secret(env, 'FIGURA_SSO_SECRET');
-  if (sessionSecret === ssoSecret) throw new Error('FIGURA_SSO_SECRET must differ from FIGURA_SESSION_SECRET');
+  if (sessionSecret === ssoSecret)
+    throw new Error('FIGURA_SSO_SECRET must differ from FIGURA_SESSION_SECRET');
   const databaseUrl = env.FIGURA_DATABASE_URL ?? '';
   if (!databaseUrl) throw new Error('FIGURA_DATABASE_URL must be set');
-  const origins = (env.FIGURA_CONSOLE_ORIGINS ?? 'http://localhost:4100').split(',').map((s) => s.trim()).filter(Boolean);
+  const origins = (env.FIGURA_CONSOLE_ORIGINS ?? 'http://localhost:4100')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   for (const o of origins) {
-    if (!/^https?:\/\/[a-z0-9.-]+(:\d+)?$/i.test(o)) throw new Error(`FIGURA_CONSOLE_ORIGINS: invalid origin ${o}`);
+    if (!/^https?:\/\/[a-z0-9.-]+(:\d+)?$/i.test(o))
+      throw new Error(`FIGURA_CONSOLE_ORIGINS: invalid origin ${o}`);
   }
   return {
     databaseUrl,

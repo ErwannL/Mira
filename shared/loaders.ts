@@ -1,6 +1,11 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { personaSchema, timeConfigSchema, type Persona, type TimeConfig } from './persona-schema.js';
+import {
+  personaSchema,
+  timeConfigSchema,
+  type Persona,
+  type TimeConfig,
+} from './persona-schema.js';
 import { useCaseSchema, type Catalogue, type UseCase } from './catalogue-schema.js';
 
 function readJson(path: string): unknown {
@@ -18,7 +23,8 @@ export function loadPersonas(dir: string): Persona[] {
   const personas = jsonFiles(dir).map((file) => {
     const parsed = personaSchema.safeParse(readJson(join(dir, file)));
     if (!parsed.success) throw new Error(`Invalid persona ${file}: ${parsed.error.message}`);
-    if (`${parsed.data.id}.json` !== file) throw new Error(`Persona file ${file} must be named after its id`);
+    if (`${parsed.data.id}.json` !== file)
+      throw new Error(`Persona file ${file} must be named after its id`);
     return parsed.data;
   });
   if (personas.length === 0) throw new Error(`No persona in ${dir}`);
@@ -33,7 +39,8 @@ export function loadCatalogue(dir: string): Catalogue {
   const useCases = jsonFiles(useDir).map((file) => {
     const parsed = useCaseSchema.safeParse(readJson(join(useDir, file)));
     if (!parsed.success) throw new Error(`Invalid use case ${file}: ${parsed.error.message}`);
-    if (`${parsed.data.id}.json` !== file) throw new Error(`Use case file ${file} must be named after its id`);
+    if (`${parsed.data.id}.json` !== file)
+      throw new Error(`Use case file ${file} must be named after its id`);
     return parsed.data;
   });
   const ids = new Set(useCases.map((u) => u.id));

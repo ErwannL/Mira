@@ -19,7 +19,10 @@ export interface BrowserDriverOptions {
 }
 
 class StepFailure extends Error {
-  constructor(message: string, readonly role: string | null) {
+  constructor(
+    message: string,
+    readonly role: string | null,
+  ) {
     super(message);
   }
 }
@@ -32,14 +35,23 @@ export class BrowserDriver implements Driver {
   private pending: Promise<void>[] = [];
   private measuredUrl = '';
 
-  private constructor(private readonly context: BrowserContext, private readonly page: Page, private readonly persona: Persona, private readonly opts: BrowserDriverOptions) {
+  private constructor(
+    private readonly context: BrowserContext,
+    private readonly page: Page,
+    private readonly persona: Persona,
+    private readonly opts: BrowserDriverOptions,
+  ) {
     page.on('response', (r) => this.onResponse(r));
     page.on('requestfailed', () => {
       this.facts.networkErrors += 1;
     });
   }
 
-  static async open(browser: Browser, persona: Persona, opts: BrowserDriverOptions): Promise<BrowserDriver> {
+  static async open(
+    browser: Browser,
+    persona: Persona,
+    opts: BrowserDriverOptions,
+  ): Promise<BrowserDriver> {
     const vp = VIEWPORTS[persona.device];
     const context = await browser.newContext({
       viewport: { width: vp.width, height: vp.height },
@@ -60,13 +72,21 @@ export class BrowserDriver implements Driver {
     if (r.status() >= 500) this.facts.networkErrors += 1;
     if (url.pathname.startsWith('/api')) {
       const path = url.pathname.replace(/\/[a-z]+\d[0-9a-z]*(?=\/|$)/g, '/:id');
-      this.calls.push({ method: r.request().method(), path, status: r.status(), ms: Math.round(r.request().timing().responseEnd) });
+      this.calls.push({
+        method: r.request().method(),
+        path,
+        status: r.status(),
+        ms: Math.round(r.request().timing().responseEnd),
+      });
     }
     if (r.status() === 402) {
       this.pending.push(
         r.json().then(
           (b: Record<string, unknown>) => {
-            this.paywall = { code: String(b.code ?? 'PAYWALL'), featureKey: String(b.feature ?? b.limitKey ?? 'unknown') };
+            this.paywall = {
+              code: String(b.code ?? 'PAYWALL'),
+              featureKey: String(b.feature ?? b.limitKey ?? 'unknown'),
+            };
           },
           () => {
             this.paywall = { code: 'PAYWALL', featureKey: 'unknown' };
@@ -90,18 +110,37 @@ export class BrowserDriver implements Driver {
     } catch (e) {
       const failure = e as StepFailure;
       error = failure.message;
-      if (failure.role) this.facts.targetUnnamed = (await this.measure()).unnamedByRole[failure.role] !== undefined;
+      if (failure.role)
+        this.facts.targetUnnamed = (await this.measure()).unnamedByRole[failure.role] !== undefined;
     }
     await Promise.all(this.pending);
     this.absorb(await this.measure());
     this.facts.paywall = this.paywall !== null;
     const screenshot = await this.screenshot(ctx.label);
-    return { ok: error === null, facts: this.facts, error, paywall: this.paywall, screenshot, apiCalls: this.calls, wallMs: Date.now() - started, captured: {}, pages };
+    return {
+      ok: error === null,
+      facts: this.facts,
+      error,
+      paywall: this.paywall,
+      screenshot,
+      apiCalls: this.calls,
+      wallMs: Date.now() - started,
+      captured: {},
+      pages,
+    };
   }
 
-  private async run(step: UiStep, index: number, ctx: AttemptContext, pages: string[]): Promise<void> {
+  private async run(
+    step: UiStep,
+    index: number,
+    ctx: AttemptContext,
+    pages: string[],
+  ): Promise<void> {
     if (step.action === 'goto' || step.action === 'openVerifyUrl') {
-      const url = step.action === 'goto' ? this.opts.baseUrl + fillTemplate(step.path, ctx.vars) : (ctx.vars.verifyUrl as string);
+      const url =
+        step.action === 'goto'
+          ? this.opts.baseUrl + fillTemplate(step.path, ctx.vars)
+          : (ctx.vars.verifyUrl as string);
       const t0 = Date.now();
       await this.page.goto(url, { waitUntil: 'load' });
       this.facts.timeToInteractiveMs = Math.max(this.facts.timeToInteractiveMs, Date.now() - t0);
@@ -128,14 +167,22 @@ export class BrowserDriver implements Driver {
     await this.act(step, target, ctx, index);
   }
 
-  private async act(step: Exclude<UiStep, { action: 'goto' | 'openVerifyUrl' | 'press' | 'expect' }>, target: Locator, ctx: AttemptContext, index: number): Promise<void> {
+  private async act(
+    step: Exclude<UiStep, { action: 'goto' | 'openVerifyUrl' | 'press' | 'expect' }>,
+    target: Locator,
+    ctx: AttemptContext,
+    index: number,
+  ): Promise<void> {
     const keyboard = this.persona.assistive?.keyboardOnly === true;
     if (step.action === 'fill') {
-      await target.fill(applyMistakes(step.value, fillTemplate(step.value, ctx.vars), ctx.mistakes));
+      await target.fill(
+        applyMistakes(step.value, fillTemplate(step.value, ctx.vars), ctx.mistakes),
+      );
     } else if (step.action === 'select') {
       await target.selectOption(fillTemplate(step.value, ctx.vars));
     } else if (step.action === 'drag') {
-      if (keyboard) throw new StepFailure(`step ${index + 1}: drag and drop has no keyboard alternative`, null);
+      if (keyboard)
+        throw new StepFailure(`step ${index + 1}: drag and drop has no keyboard alternative`, null);
       await target.dragTo(await this.find(step.to, index, ctx));
     } else if (keyboard) {
       await target.focus();
@@ -151,9 +198,14 @@ export class BrowserDriver implements Driver {
   private locate(target: UiTarget, name: string): Locator {
     const exact = target.exact ?? false;
     if (target.role === 'password') {
-      return this.page.getByLabel(name, { exact }).and(this.page.locator('input[type="password"]')).first();
+      return this.page
+        .getByLabel(name, { exact })
+        .and(this.page.locator('input[type="password"]'))
+        .first();
     }
-    return this.page.getByRole(target.role as Parameters<Page['getByRole']>[0], { name, exact }).first();
+    return this.page
+      .getByRole(target.role as Parameters<Page['getByRole']>[0], { name, exact })
+      .first();
   }
 
   /** Finds a control by role + accessible name in the persona's language, else in the other one. */
@@ -166,7 +218,10 @@ export class BrowserDriver implements Driver {
     try {
       await mine.or(theirs).or(blocker).first().waitFor({ state: 'visible' });
     } catch {
-      throw new StepFailure(`step ${index + 1}: no ${target.role} named "${fillTemplate(target.name[own], ctx.vars)}"`, target.role);
+      throw new StepFailure(
+        `step ${index + 1}: no ${target.role} named "${fillTemplate(target.name[own], ctx.vars)}"`,
+        target.role,
+      );
     }
     if (await mine.isVisible()) return mine;
     if (await theirs.isVisible()) {
@@ -174,7 +229,9 @@ export class BrowserDriver implements Driver {
       return theirs;
     }
     await Promise.all(this.pending);
-    const blocked = this.paywall ? 'paywall shown' : `error shown: ${(await blocker.innerText()).trim()}`;
+    const blocked = this.paywall
+      ? 'paywall shown'
+      : `error shown: ${(await blocker.innerText()).trim()}`;
     throw new StepFailure(`step ${index + 1}: ${blocked}`, null);
   }
 
@@ -187,7 +244,9 @@ export class BrowserDriver implements Driver {
     const choice = this.persona.privacyConcern >= 0.5 ? ui.cookieReject : ui.cookieAccept;
     // Same fallback as find(): an untranslated banner is still dismissed, but noticed.
     const mine = dialog.getByRole('button', { name: choice[own] });
-    const button = (await mine.isVisible()) ? mine : dialog.getByRole('button', { name: choice[other] });
+    const button = (await mine.isVisible())
+      ? mine
+      : dialog.getByRole('button', { name: choice[other] });
     if (button !== mine) this.facts.foreignText = true;
     await button.click();
     this.facts.clicksToGoal += 1;
@@ -224,7 +283,11 @@ export class BrowserDriver implements Driver {
   private async screenshot(label: string): Promise<string | null> {
     if (!this.opts.screenshotDir) return null;
     const file = `${label.replace(/[^a-z0-9-]/gi, '_')}.jpg`;
-    await this.page.screenshot({ path: join(this.opts.screenshotDir, file), type: 'jpeg', quality: 50 });
+    await this.page.screenshot({
+      path: join(this.opts.screenshotDir, file),
+      type: 'jpeg',
+      quality: 50,
+    });
     return file;
   }
 

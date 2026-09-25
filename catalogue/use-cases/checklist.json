@@ -5,9 +5,7 @@
     "fr": "Liste de contrôle"
   },
   "area": "cards",
-  "requires": [
-    "create-card"
-  ],
+  "requires": ["create-card"],
   "planGate": "free",
   "minutes": 2,
   "ui": [
@@ -77,9 +75,7 @@
         "text": "Call the supplier"
       },
       "auth": true,
-      "expectStatus": [
-        201
-      ]
+      "expectStatus": [201]
     }
   ],
   "success": {

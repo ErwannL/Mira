@@ -11,7 +11,8 @@ export function adminApi(app: FastifyInstance, deps: Deps): void {
     const local = isLoopbackHost(req.ip) || config.adminAllowed.some((p) => req.ip.startsWith(p));
     if (!enabled || !local) return reply.code(404).send({ error: 'NOT_FOUND' });
     const auth = req.headers.authorization ?? '';
-    if (!safeEqual(auth, `Bearer ${config.serviceSecret}`)) return reply.code(401).send({ error: 'UNAUTHENTICATED' });
+    if (!safeEqual(auth, `Bearer ${config.serviceSecret}`))
+      return reply.code(401).send({ error: 'UNAUTHENTICATED' });
   };
   const body = (req: FastifyRequest) => (req.body ?? {}) as Record<string, unknown>;
 
@@ -30,7 +31,9 @@ export function adminApi(app: FastifyInstance, deps: Deps): void {
       return reply.code(404).send({ error: 'NO_UNVERIFIED_SYNTHETIC_ACCOUNT' });
     }
     const proto = (req.headers['x-forwarded-proto'] as string | undefined) ?? 'http';
-    return { verifyUrl: `${proto}://${req.headers.host}/api/auth/verify-email?token=${user.verifyToken}` };
+    return {
+      verifyUrl: `${proto}://${req.headers.host}/api/auth/verify-email?token=${user.verifyToken}`,
+    };
   });
 
   app.post('/api/admin/synthetic/cleanup', { preHandler: guard }, async (req, reply) => {
@@ -56,7 +59,10 @@ export function adminApi(app: FastifyInstance, deps: Deps): void {
   /** Fake-only control endpoint: friction scenario for one run. */
   app.put('/__control/scenario/:runId', { preHandler: guard }, async (req, reply) => {
     try {
-      deps.scenarios.set((req.params as Record<string, string>).runId as string, resolveScenario(req.body));
+      deps.scenarios.set(
+        (req.params as Record<string, string>).runId as string,
+        resolveScenario(req.body),
+      );
       return { ok: true };
     } catch (e) {
       return reply.code(400).send({ error: 'BAD_SCENARIO', message: (e as Error).message });

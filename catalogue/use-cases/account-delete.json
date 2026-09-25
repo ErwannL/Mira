@@ -5,9 +5,7 @@
     "fr": "Supprimer mon compte"
   },
   "area": "settings",
-  "requires": [
-    "login"
-  ],
+  "requires": ["login"],
   "planGate": "free",
   "minutes": 2,
   "ui": [
@@ -51,9 +49,7 @@
       "method": "DELETE",
       "path": "/api/me",
       "auth": true,
-      "expectStatus": [
-        200
-      ]
+      "expectStatus": [200]
     }
   ],
   "success": {

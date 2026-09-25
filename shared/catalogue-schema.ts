@@ -49,9 +49,15 @@ export const useCaseSchema = z
     mistakes: z.array(z.enum(['typoEmail', 'weakPassword', 'forgetTerms'])).optional(),
     ui: z.array(uiStepSchema).min(1),
     api: z.array(apiStepSchema),
-    success: z.object({ ui: targetSchema.optional(), apiStatus: z.number().int().optional() }).strict(),
+    success: z
+      .object({ ui: targetSchema.optional(), apiStatus: z.number().int().optional() })
+      .strict(),
     frictionHints: z
-      .object({ fields: z.number().int().min(0), clicks: z.number().int().min(0), words: z.number().int().min(0) })
+      .object({
+        fields: z.number().int().min(0),
+        clicks: z.number().int().min(0),
+        words: z.number().int().min(0),
+      })
       .strict(),
   })
   .strict();

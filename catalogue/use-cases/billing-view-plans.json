@@ -5,9 +5,7 @@
     "fr": "Voir les offres"
   },
   "area": "billing",
-  "requires": [
-    "login"
-  ],
+  "requires": ["login"],
   "planGate": "free",
   "minutes": 2,
   "ui": [

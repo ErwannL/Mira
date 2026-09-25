@@ -31,12 +31,19 @@ export function authRoutes(app: FastifyInstance, cfg: AppConfig, db: Db, nowS: (
 
   app.post('/auth/sso', async (req, reply) => {
     const token = (req.body as { token?: unknown } | undefined)?.token;
-    if (typeof token !== 'string' || token.length > 4096) return reply.code(400).send({ error: 'TOKEN_REQUIRED' });
+    if (typeof token !== 'string' || token.length > 4096)
+      return reply.code(400).send({ error: 'TOKEN_REQUIRED' });
     const r = verifySsoToken(token, { secret: cfg.ssoSecret, appId: cfg.appId, nowS: nowS() });
     if ('error' in r) return reply.code(401).send({ error: r.error });
-    if (!(await consumeSsoToken(db, sha256(token), new Date(r.exp * 1000)))) return reply.code(401).send({ error: 'REUSED' });
+    if (!(await consumeSsoToken(db, sha256(token), new Date(r.exp * 1000))))
+      return reply.code(401).send({ error: 'REUSED' });
     const session = randomBytes(32).toString('base64url');
-    await createSession(db, idHash(session), r.operator, new Date(Date.now() + cfg.sessionTtlMinutes * 60_000));
+    await createSession(
+      db,
+      idHash(session),
+      r.operator,
+      new Date(Date.now() + cfg.sessionTtlMinutes * 60_000),
+    );
     await audit(db, r.operator, 'session.open');
     void reply.setCookie(SESSION_COOKIE, session, cookieOptions(cfg));
     return { operator: r.operator };
@@ -55,7 +62,8 @@ export function authRoutes(app: FastifyInstance, cfg: AppConfig, db: Db, nowS: (
     const token = req.cookies[SESSION_COOKIE];
     const session = token ? await findSession(db, idHash(token)) : null;
     if (!session) return reply.code(401).send({ error: 'NO_SESSION' });
-    if (req.method !== 'GET' && req.headers['x-figura'] !== '1') return reply.code(403).send({ error: 'CSRF_HEADER_REQUIRED' });
+    if (req.method !== 'GET' && req.headers['x-figura'] !== '1')
+      return reply.code(403).send({ error: 'CSRF_HEADER_REQUIRED' });
     req.operator = session.operator;
   });
 }

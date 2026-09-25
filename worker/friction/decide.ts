@@ -20,7 +20,12 @@ export interface DecisionInput {
   critical: boolean;
 }
 
-export function decide(input: DecisionInput, persona: Persona, weights: FrictionWeights, prng: Prng): Decision {
+export function decide(
+  input: DecisionInput,
+  persona: Persona,
+  weights: FrictionWeights,
+  prng: Prng,
+): Decision {
   const tolerance = toleranceOf(persona, weights);
   if (input.friction.hardBlock) {
     return { action: 'abandon', rule: `hard block: ${input.friction.hardBlock}` };
@@ -32,7 +37,10 @@ export function decide(input: DecisionInput, persona: Persona, weights: Friction
     };
   }
   if (!input.stepFailed) {
-    return { action: 'continue', rule: `step succeeded, frustration ${round(input.frustration)} < ${tolerance}` };
+    return {
+      action: 'continue',
+      rule: `step succeeded, frustration ${round(input.frustration)} < ${tolerance}`,
+    };
   }
   if (input.attempts <= weights.maxRetries) {
     const p = round(persona.recoveryWillingness * (1 - input.frustration / tolerance));
@@ -41,12 +49,24 @@ export function decide(input: DecisionInput, persona: Persona, weights: Friction
       return { action: 'retry', rule: `failed; retry roll ${round(roll)} < recovery ${p}` };
     }
     if (input.critical) {
-      return { action: 'abandon', rule: `failed on critical step; retry roll ${round(roll)} ≥ recovery ${p}` };
+      return {
+        action: 'abandon',
+        rule: `failed on critical step; retry roll ${round(roll)} ≥ recovery ${p}`,
+      };
     }
-    return { action: 'skip', rule: `failed; retry roll ${round(roll)} ≥ recovery ${p}; optional step skipped` };
+    return {
+      action: 'skip',
+      rule: `failed; retry roll ${round(roll)} ≥ recovery ${p}; optional step skipped`,
+    };
   }
   if (input.critical) {
-    return { action: 'abandon', rule: `failed ${input.attempts} times on a critical step (max ${weights.maxRetries} retries)` };
+    return {
+      action: 'abandon',
+      rule: `failed ${input.attempts} times on a critical step (max ${weights.maxRetries} retries)`,
+    };
   }
-  return { action: 'skip', rule: `failed ${input.attempts} times (max ${weights.maxRetries} retries); skipped` };
+  return {
+    action: 'skip',
+    rule: `failed ${input.attempts} times (max ${weights.maxRetries} retries); skipped`,
+  };
 }

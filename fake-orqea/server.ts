@@ -18,15 +18,23 @@ export interface FakeOrqea {
   deps: Deps;
 }
 
-export async function buildFakeOrqea(config: FakeConfig, defaultScenario: Scenario): Promise<FakeOrqea> {
+export async function buildFakeOrqea(
+  config: FakeConfig,
+  defaultScenario: Scenario,
+): Promise<FakeOrqea> {
   const app = Fastify({ logger: false, trustProxy: false });
-  const deps: Deps = { config, store: new Store(), scenarios: new ScenarioRegistry(defaultScenario) };
+  const deps: Deps = {
+    config,
+    store: new Store(),
+    scenarios: new ScenarioRegistry(defaultScenario),
+  };
   await app.register(cookie);
 
   const endpoints: { method: string; path: string }[] = [];
   app.addHook('onRoute', (route) => {
     const methods = ([] as string[]).concat(route.method).filter((m) => m !== 'HEAD');
-    if (route.url.startsWith('/api')) methods.forEach((method) => endpoints.push({ method, path: route.url }));
+    if (route.url.startsWith('/api'))
+      methods.forEach((method) => endpoints.push({ method, path: route.url }));
   });
   app.addHook('onRequest', async (req) => {
     const slow = ctxOf(req, deps).scenario.slowMs;
@@ -36,7 +44,9 @@ export async function buildFakeOrqea(config: FakeConfig, defaultScenario: Scenar
   });
 
   app.get('/health', async () => ({ ok: true }));
-  app.get('/static/app.js', async (_req, reply) => reply.type('text/javascript').send(clientScript()));
+  app.get('/static/app.js', async (_req, reply) =>
+    reply.type('text/javascript').send(clientScript()),
+  );
   app.get('/static/app.css', async (_req, reply) => reply.type('text/css').send(CSS));
   app.get('/api', async () => ({ endpoints }));
   authApi(app, deps);

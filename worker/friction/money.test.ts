@@ -5,8 +5,22 @@ import { costFor, decideMoney, reprice } from './money.js';
 
 const plans: Plan[] = [
   { key: 'free', name: 'Free', priceMonthly: 0, currency: 'EUR', perSeat: false, features: [] },
-  { key: 'pro', name: 'Pro', priceMonthly: 9, currency: 'EUR', perSeat: false, features: ['automation', 'qr'] },
-  { key: 'team', name: 'Team', priceMonthly: 4, currency: 'EUR', perSeat: true, features: ['automation', 'bulk'] },
+  {
+    key: 'pro',
+    name: 'Pro',
+    priceMonthly: 9,
+    currency: 'EUR',
+    perSeat: false,
+    features: ['automation', 'qr'],
+  },
+  {
+    key: 'team',
+    name: 'Team',
+    priceMonthly: 4,
+    currency: 'EUR',
+    perSeat: true,
+    features: ['automation', 'bulk'],
+  },
 ];
 const enc = (featureKey: string | null, neededFeatures: string[], satisfaction = 1) => ({
   featureKey,
@@ -30,7 +44,9 @@ describe('money', () => {
     expect(out.perceivedValue).toBeLessThan(0.5);
   });
   it('churns when unaffordable and not valuable, defers when unaffordable but valuable', () => {
-    expect(decideMoney(enc('qr', ['qr'], 0), plans, persona('retired-volunteer')).decision).toBe('churn');
+    expect(decideMoney(enc('qr', ['qr'], 0), plans, persona('retired-volunteer')).decision).toBe(
+      'churn',
+    );
     const rich = { ...persona('retired-volunteer'), valueThreshold: 0.1 };
     const out = decideMoney(enc('qr', ['qr']), plans, rich);
     expect(out.decision).toBe('defer');
@@ -38,7 +54,10 @@ describe('money', () => {
   });
   it('pricing page visit considers all needed features; no need ⇒ defer', () => {
     expect(decideMoney(enc(null, ['bulk']), plans, persona('agency')).planKey).toBe('team');
-    expect(decideMoney(enc(null, []), plans, persona('agency'))).toMatchObject({ decision: 'defer', planKey: null });
+    expect(decideMoney(enc(null, []), plans, persona('agency'))).toMatchObject({
+      decision: 'defer',
+      planKey: null,
+    });
   });
   it('reprices only listed plans', () => {
     const r = reprice(plans, { pro: 3 });

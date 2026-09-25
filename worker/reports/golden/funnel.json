@@ -1334,9 +1334,7 @@
       "stage": "abandoned",
       "sessions": 1,
       "frustration": 0.492,
-      "succeeded": [
-        "landing"
-      ],
+      "succeeded": ["landing"],
       "abandonedAt": "signup",
       "lastRule": "frustration 0.492 ≥ tolerance 0.37 (0.25 + 0.8 × frictionTolerance)",
       "money": []
@@ -1362,11 +1360,7 @@
       ],
       "abandonedAt": null,
       "lastRule": "skipped: conversion recorded only (test-mode checkout not enabled for this run)",
-      "money": [
-        "automation: convert",
-        "bulk: convert",
-        "pricing-page: convert"
-      ]
+      "money": ["automation: convert", "bulk: convert", "pricing-page: convert"]
     },
     {
       "id": "student",
@@ -1406,9 +1400,7 @@
       "settings-language",
       "settings-theme"
     ],
-    "endpointsNeverCalled": [
-      "GET /api/me"
-    ],
+    "endpointsNeverCalled": ["GET /api/me"],
     "pagesSeen": [
       "/billing-view-plans",
       "/calendar",

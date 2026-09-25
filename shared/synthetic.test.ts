@@ -36,15 +36,20 @@ describe('synthetic emails', () => {
   it('builds and parses', () => {
     expect(syntheticEmail('r1', 'student')).toBe('synth+r1-student@synthetic.invalid');
     expect(syntheticEmail('r1', 'student', 3)).toBe('synth+r1-student-3@synthetic.invalid');
-    expect(parseSyntheticEmail('synth+r1-student-3@synthetic.invalid')).toEqual({ runId: 'r1', rest: 'student-3' });
+    expect(parseSyntheticEmail('synth+r1-student-3@synthetic.invalid')).toEqual({
+      runId: 'r1',
+      rest: 'student-3',
+    });
     expect(parseSyntheticEmail('bob@example.com')).toBeNull();
   });
 });
 
 describe('hosts', () => {
   it('recognises loopback hosts', () => {
-    for (const h of ['localhost', '127.0.0.1', '127.1.2.3', '[::1]', '::1', '::ffff:127.0.0.1']) expect(isLoopbackHost(h)).toBe(true);
-    for (const h of ['example.com', '10.0.0.1', 'localhost.evil.com']) expect(isLoopbackHost(h)).toBe(false);
+    for (const h of ['localhost', '127.0.0.1', '127.1.2.3', '[::1]', '::1', '::ffff:127.0.0.1'])
+      expect(isLoopbackHost(h)).toBe(true);
+    for (const h of ['example.com', '10.0.0.1', 'localhost.evil.com'])
+      expect(isLoopbackHost(h)).toBe(false);
   });
   it('extracts hostnames from Host headers', () => {
     expect(hostnameOf('localhost:4000')).toBe('localhost');

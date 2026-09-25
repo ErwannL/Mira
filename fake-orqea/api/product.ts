@@ -7,9 +7,12 @@ type Body = Record<string, unknown>;
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
 const DEFAULT_LISTS = { en: ['To do', 'Doing', 'Done'], fr: ['À faire', 'En cours', 'Terminé'] };
 
-export function productApi(app: FastifyInstance, deps: Deps): void {
+function productHelpers(deps: Deps) {
   const { store } = deps;
-  const authed = (req: FastifyRequest, reply: FastifyReply): { ctx: Ctx; user: User; body: Body } | null => {
+  const authed = (
+    req: FastifyRequest,
+    reply: FastifyReply,
+  ): { ctx: Ctx; user: User; body: Body } | null => {
     const ctx = ctxOf(req, deps);
     if (!ctx.user) {
       void reply.code(401).send({ error: 'UNAUTHENTICATED', message: 'Log in first.' });
@@ -25,14 +28,38 @@ export function productApi(app: FastifyInstance, deps: Deps): void {
     const c = store.cards.get(id);
     return c && store.boardOfCard(c).ownerId === user.id ? c : undefined;
   };
-  const notFound = (reply: FastifyReply) => reply.code(404).send({ error: 'NOT_FOUND', message: 'Not found.' });
-  const required = (reply: FastifyReply, ctx: Ctx) => fail(reply, ctx, 400, 'MISSING_FIELD', 'err_required');
+  const notFound = (reply: FastifyReply) =>
+    reply.code(404).send({ error: 'NOT_FOUND', message: 'Not found.' });
+  const required = (reply: FastifyReply, ctx: Ctx) =>
+    fail(reply, ctx, 400, 'MISSING_FIELD', 'err_required');
   const P = (req: FastifyRequest) => req.params as Record<string, string>;
 
+  return { store, authed, ownBoard, ownCard, notFound, required, P };
+}
+type H = ReturnType<typeof productHelpers>;
+
+export function productApi(app: FastifyInstance, deps: Deps): void {
+  const h = productHelpers(deps);
+  productApi1(app, deps, h);
+  productApi2(app, deps, h);
+  productApi3(app, deps, h);
+}
+
+function productApi1(app: FastifyInstance, deps: Deps, h: H): void {
+  const { store, authed, required } = h;
   app.get('/api/me', async (req, reply) => {
     const a = authed(req, reply);
-    return a ? { id: a.user.id, email: a.user.email, language: a.user.language, theme: a.user.theme, plan: a.user.plan } : reply;
+    return a
+      ? {
+          id: a.user.id,
+          email: a.user.email,
+          language: a.user.language,
+          theme: a.user.theme,
+          plan: a.user.plan,
+        }
+      : reply;
   });
+
   app.post('/api/onboarding/complete', async (req, reply) => {
     const a = authed(req, reply);
     if (!a) return reply;
@@ -42,17 +69,29 @@ export function productApi(app: FastifyInstance, deps: Deps): void {
 
   app.get('/api/boards', async (req, reply) => {
     const a = authed(req, reply);
-    return a ? { boards: store.boardsOf(a.user.id).map((b) => ({ id: b.id, name: b.name })) } : reply;
+    return a
+      ? { boards: store.boardsOf(a.user.id).map((b) => ({ id: b.id, name: b.name })) }
+      : reply;
   });
+
   app.post('/api/boards', async (req, reply) => {
     const a = authed(req, reply);
     if (!a) return reply;
     const name = str(a.body.name);
     if (!name) return required(reply, a.ctx);
     if (a.user.plan === 'free' && store.boardsOf(a.user.id).length >= a.ctx.scenario.boardLimit) {
-      return reply.code(402).send({ code: 'PLAN_LIMIT', limitKey: 'boards', planKey: 'pro', upgrade: true });
+      return reply
+        .code(402)
+        .send({ code: 'PLAN_LIMIT', limitKey: 'boards', planKey: 'pro', upgrade: true });
     }
-    const board: Board = { id: store.id('b'), ownerId: a.user.id, name, members: [], guestLinks: [], rules: [] };
+    const board: Board = {
+      id: store.id('b'),
+      ownerId: a.user.id,
+      name,
+      members: [],
+      guestLinks: [],
+      rules: [],
+    };
     store.boards.set(board.id, board);
     DEFAULT_LISTS[a.ctx.view.lang].forEach((n, i) => {
       const id = store.id('l');
@@ -60,14 +99,23 @@ export function productApi(app: FastifyInstance, deps: Deps): void {
     });
     return reply.code(201).send({ id: board.id, name });
   });
+}
+
+function productApi2(app: FastifyInstance, deps: Deps, h: H): void {
+  const { store, authed, ownBoard, ownCard, notFound, required, P } = h;
   app.get('/api/boards/:boardId', async (req, reply) => {
     const a = authed(req, reply);
     if (!a) return reply;
     const b = ownBoard(a.user, P(req).boardId as string);
     if (!b) return notFound(reply);
-    const lists = store.listsOf(b.id).map((l) => ({ id: l.id, name: l.name, cards: store.cardsOf(l.id).map((c) => ({ id: c.id, title: c.title })) }));
+    const lists = store.listsOf(b.id).map((l) => ({
+      id: l.id,
+      name: l.name,
+      cards: store.cardsOf(l.id).map((c) => ({ id: c.id, title: c.title })),
+    }));
     return { id: b.id, name: b.name, lists };
   });
+
   app.post('/api/boards/:boardId/lists', async (req, reply) => {
     const a = authed(req, reply);
     if (!a) return reply;
@@ -79,6 +127,7 @@ export function productApi(app: FastifyInstance, deps: Deps): void {
     store.lists.set(id, { id, boardId: b.id, name, position: store.listsOf(b.id).length });
     return reply.code(201).send({ id, name });
   });
+
   app.post('/api/lists/:listId/cards', async (req, reply) => {
     const a = authed(req, reply);
     if (!a) return reply;
@@ -86,10 +135,19 @@ export function productApi(app: FastifyInstance, deps: Deps): void {
     if (!list || !ownBoard(a.user, list.boardId)) return notFound(reply);
     const title = str(a.body.title);
     if (!title) return required(reply, a.ctx);
-    const card: Card = { id: store.id('c'), listId: list.id, title, description: '', priority: 'medium', checklist: [], comments: [] };
+    const card: Card = {
+      id: store.id('c'),
+      listId: list.id,
+      title,
+      description: '',
+      priority: 'medium',
+      checklist: [],
+      comments: [],
+    };
     store.cards.set(card.id, card);
     return reply.code(201).send({ id: card.id, title });
   });
+
   app.patch('/api/cards/:cardId', async (req, reply) => {
     const a = authed(req, reply);
     if (!a) return reply;
@@ -97,7 +155,8 @@ export function productApi(app: FastifyInstance, deps: Deps): void {
     if (!card) return notFound(reply);
     const { description, priority, listId } = a.body;
     if (typeof description === 'string') card.description = description;
-    if (priority === 'low' || priority === 'medium' || priority === 'high') card.priority = priority;
+    if (priority === 'low' || priority === 'medium' || priority === 'high')
+      card.priority = priority;
     if (typeof listId === 'string') {
       const list = store.lists.get(listId);
       if (!list || !ownBoard(a.user, list.boardId)) return notFound(reply);
@@ -105,6 +164,10 @@ export function productApi(app: FastifyInstance, deps: Deps): void {
     }
     return { id: card.id, priority: card.priority, listId: card.listId };
   });
+}
+
+function productApi3(app: FastifyInstance, deps: Deps, h: H): void {
+  const { authed, ownBoard, ownCard, notFound, required, P } = h;
   app.post('/api/cards/:cardId/checklist', async (req, reply) => {
     const a = authed(req, reply);
     if (!a) return reply;
@@ -115,6 +178,7 @@ export function productApi(app: FastifyInstance, deps: Deps): void {
     card.checklist.push({ text });
     return reply.code(201).send({ count: card.checklist.length });
   });
+
   app.post('/api/cards/:cardId/comments', async (req, reply) => {
     const a = authed(req, reply);
     if (!a) return reply;
@@ -126,6 +190,7 @@ export function productApi(app: FastifyInstance, deps: Deps): void {
     card.comments.push({ authorId: a.user.id, text, mentions });
     return reply.code(201).send({ count: card.comments.length, mentions });
   });
+
   app.post('/api/cards/bulk', async (req, reply) => {
     const a = authed(req, reply);
     if (!a) return reply;
@@ -148,7 +213,11 @@ interface Helpers {
 function boardExtras(
   app: FastifyInstance,
   deps: Deps,
-  h: Helpers & { ownBoard: (u: User, id: string) => Board | undefined; notFound: (r: FastifyReply) => FastifyReply; P: (r: FastifyRequest) => Record<string, string> },
+  h: Helpers & {
+    ownBoard: (u: User, id: string) => Board | undefined;
+    notFound: (r: FastifyReply) => FastifyReply;
+    P: (r: FastifyRequest) => Record<string, string>;
+  },
 ): void {
   const withBoard = (req: FastifyRequest, reply: FastifyReply) => {
     const a = h.authed(req, reply);
@@ -164,7 +233,11 @@ function boardExtras(
     const a = withBoard(req, reply);
     if (!a) return reply;
     if (locked(a.ctx, 'automation')) return paywall(reply, a.ctx, 'automation');
-    const rule = { name: str(a.body.name), trigger: str(a.body.trigger), action: str(a.body.action) };
+    const rule = {
+      name: str(a.body.name),
+      trigger: str(a.body.trigger),
+      action: str(a.body.action),
+    };
     if (!rule.name || !rule.trigger || !rule.action) return h.required(reply, a.ctx);
     a.board.rules.push(rule);
     return reply.code(201).send(rule);
@@ -175,7 +248,9 @@ function boardExtras(
     const email = str(a.body.email);
     if (!email.includes('@')) return fail(reply, a.ctx, 400, 'INVALID_EMAIL', 'err_email');
     a.board.members.push(email);
-    return reply.code(201).send({ invited: email, hasAccount: deps.store.userByEmail(email) !== undefined });
+    return reply
+      .code(201)
+      .send({ invited: email, hasAccount: deps.store.userByEmail(email) !== undefined });
   });
   app.post('/api/boards/:boardId/guest-links', async (req, reply) => {
     const a = withBoard(req, reply);
@@ -187,11 +262,23 @@ function boardExtras(
 }
 
 function personalApi(app: FastifyInstance, deps: Deps, h: Helpers): void {
+  personalApi1(app, deps, h);
+  personalApi2(app, deps, h);
+}
+
+function personalApi1(app: FastifyInstance, deps: Deps, h: Helpers): void {
   const { store } = deps;
   app.get('/api/calendar', async (req, reply) => {
     const a = h.authed(req, reply);
-    return !a ? reply : { reminders: [...store.notes.values()].filter((n) => n.ownerId === a.user.id).map((n) => ({ text: n.text, at: n.remindAt })) };
+    return !a
+      ? reply
+      : {
+          reminders: [...store.notes.values()]
+            .filter((n) => n.ownerId === a.user.id)
+            .map((n) => ({ text: n.text, at: n.remindAt })),
+        };
   });
+
   app.post('/api/notes', async (req, reply) => {
     const a = h.authed(req, reply);
     if (!a) return reply;
@@ -202,16 +289,20 @@ function personalApi(app: FastifyInstance, deps: Deps, h: Helpers): void {
     store.notes.set(id, { id, ownerId: a.user.id, text, remindAt });
     return reply.code(201).send({ id });
   });
+
   app.post('/api/forms', async (req, reply) => {
     const a = h.authed(req, reply);
     if (!a) return reply;
     const title = str(a.body.title);
-    const questions = Array.isArray(a.body.questions) ? a.body.questions.map(str).filter(Boolean) : [];
+    const questions = Array.isArray(a.body.questions)
+      ? a.body.questions.map(str).filter(Boolean)
+      : [];
     if (!title || questions.length === 0) return h.required(reply, a.ctx);
     const id = store.id('f');
     store.forms.set(id, { id, ownerId: a.user.id, title, questions, answers: [] });
     return reply.code(201).send({ id, publicUrl: `/f/${id}` });
   });
+
   app.post('/api/public/forms/:formId/answers', async (req, reply) => {
     const form = store.forms.get((req.params as Record<string, string>).formId as string);
     const answers = (req.body as Body | undefined)?.answers;
@@ -220,6 +311,7 @@ function personalApi(app: FastifyInstance, deps: Deps, h: Helpers): void {
     form.answers.push(answers.map(String));
     return reply.code(201).send({ received: true });
   });
+
   app.post('/api/qr', async (req, reply) => {
     const a = h.authed(req, reply);
     if (!a) return reply;
@@ -230,14 +322,21 @@ function personalApi(app: FastifyInstance, deps: Deps, h: Helpers): void {
     store.qrs.set(id, { id, ownerId: a.user.id, url });
     return reply.code(201).send({ id });
   });
+
   app.get('/api/search', async (req, reply) => {
     const a = h.authed(req, reply);
     if (!a) return reply;
     const q = String((req.query as Body).q ?? '').toLowerCase();
     const mine = new Set(store.boardsOf(a.user.id).map((b) => b.id));
-    const hits = [...store.cards.values()].filter((c) => q && mine.has(store.boardOfCard(c).id) && c.title.toLowerCase().includes(q));
+    const hits = [...store.cards.values()].filter(
+      (c) => q && mine.has(store.boardOfCard(c).id) && c.title.toLowerCase().includes(q),
+    );
     return { cards: hits.map((c) => ({ id: c.id, title: c.title })) };
   });
+}
+
+function personalApi2(app: FastifyInstance, deps: Deps, h: Helpers): void {
+  const { store } = deps;
   app.patch('/api/me/settings', async (req, reply) => {
     const a = h.authed(req, reply);
     if (!a) return reply;
@@ -245,25 +344,33 @@ function personalApi(app: FastifyInstance, deps: Deps, h: Helpers): void {
     if (a.body.theme === 'light' || a.body.theme === 'dark') a.user.theme = a.body.theme;
     return { language: a.user.language, theme: a.user.theme };
   });
+
   app.get('/api/export', async (req, reply) => {
     const a = h.authed(req, reply);
     if (!a) return reply;
     if (locked(a.ctx, 'export')) return paywall(reply, a.ctx, 'export');
     return { boards: store.boardsOf(a.user.id).length, exportedAt: deps.config.nowS() };
   });
+
   app.delete('/api/me', async (req, reply) => {
     const a = h.authed(req, reply);
     if (!a) return reply;
     store.deleteUsers((u) => u.id === a.user.id);
     return { deleted: true };
   });
+
   app.get('/api/billing/plans', async () => ({ plans: PLANS }));
+
   app.post('/api/billing/checkout', async (req, reply) => {
     const a = h.authed(req, reply);
     if (!a) return reply;
     const plan = PLANS.find((p) => p.key === a.body.planKey && p.priceMonthly > 0);
     if (!plan) return h.required(reply, a.ctx);
-    if (deps.config.stripeMode !== 'test') return reply.code(409).send({ error: 'CHECKOUT_DISABLED', message: 'Checkout is only available in test mode here.' });
+    if (deps.config.stripeMode !== 'test')
+      return reply.code(409).send({
+        error: 'CHECKOUT_DISABLED',
+        message: 'Checkout is only available in test mode here.',
+      });
     return { mode: 'test', planKey: plan.key, checkoutUrl: '/checkout' };
   });
 }

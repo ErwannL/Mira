@@ -3,10 +3,20 @@ import { executeRun, type WorkerConfig, type WorkerDeps } from './runner.js';
 import { OrqeaClient } from './target/client.js';
 
 /** Runs abandoned by a dead worker are failed, and their synthetic data cleaned up (best effort). */
-export async function recoverStale(cfg: WorkerConfig, deps: WorkerDeps, olderThanSeconds: number): Promise<string[]> {
+export async function recoverStale(
+  cfg: WorkerConfig,
+  deps: WorkerDeps,
+  olderThanSeconds: number,
+): Promise<string[]> {
   const stale = await staleRuns(deps.db, olderThanSeconds);
   for (const run of stale) {
-    const client = new OrqeaClient({ baseUrl: run.config.targetUrl.replace(/\/$/, ''), serviceSecret: cfg.serviceSecret, runId: run.id, fetchImpl: deps.fetchImpl, nowS: deps.nowS });
+    const client = new OrqeaClient({
+      baseUrl: run.config.targetUrl.replace(/\/$/, ''),
+      serviceSecret: cfg.serviceSecret,
+      runId: run.id,
+      fetchImpl: deps.fetchImpl,
+      nowS: deps.nowS,
+    });
     const note = await client.cleanup().then(
       (r) => `worker lost; cleanup residualRows=${r.residualRows}`,
       (e: Error) => `worker lost; cleanup failed: ${e.message}`,
@@ -25,11 +35,18 @@ export async function tick(cfg: WorkerConfig, deps: WorkerDeps): Promise<RunRow 
   } catch (e) {
     // Last resort (e.g. database hiccup mid-run): never leave a run hanging in an active state.
     const message = (e as Error).message;
-    return transition(deps.db, run.id, 'failed', cfg.workerId, message, { error: message }).catch(() => run);
+    return transition(deps.db, run.id, 'failed', cfg.workerId, message, { error: message }).catch(
+      () => run,
+    );
   }
 }
 
-export async function workLoop(cfg: WorkerConfig, deps: WorkerDeps, signal: AbortSignal, pollMs: number): Promise<void> {
+export async function workLoop(
+  cfg: WorkerConfig,
+  deps: WorkerDeps,
+  signal: AbortSignal,
+  pollMs: number,
+): Promise<void> {
   await recoverStale(cfg, deps, 600);
   while (!signal.aborted) {
     const ran = await tick(cfg, deps);

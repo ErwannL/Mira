@@ -5,9 +5,7 @@
     "fr": "Répondre à un formulaire public"
   },
   "area": "forms",
-  "requires": [
-    "form-create"
-  ],
+  "requires": ["form-create"],
   "planGate": "free",
   "minutes": 1,
   "ui": [
@@ -62,14 +60,10 @@
       "method": "POST",
       "path": "/api/public/forms/{{formId}}/answers",
       "body": {
-        "answers": [
-          "Dominique"
-        ]
+        "answers": ["Dominique"]
       },
       "auth": false,
-      "expectStatus": [
-        201
-      ]
+      "expectStatus": [201]
     }
   ],
   "success": {

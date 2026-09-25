@@ -13,7 +13,10 @@ export function signJwt(payload: Record<string, unknown>, secret: string): strin
 
 export type JwtError = 'MALFORMED' | 'BAD_ALG' | 'BAD_SIGNATURE';
 
-export function verifyJwtSignature(token: string, secret: string): { payload: Record<string, unknown> } | { error: JwtError } {
+export function verifyJwtSignature(
+  token: string,
+  secret: string,
+): { payload: Record<string, unknown> } | { error: JwtError } {
   const parts = token.split('.');
   if (parts.length !== 3) return { error: 'MALFORMED' };
   const [head, body, sig] = parts as [string, string, string];
@@ -35,6 +38,14 @@ export function verifyJwtSignature(token: string, secret: string): { payload: Re
 export const SSO_ISSUER = 'orqea-admin-console';
 export const SSO_TTL_S = 60;
 
-export function mintSsoToken(secret: string, audience: string, operator: string, nowS: number): string {
-  return signJwt({ iss: SSO_ISSUER, aud: audience, operator, iat: nowS, exp: nowS + SSO_TTL_S }, secret);
+export function mintSsoToken(
+  secret: string,
+  audience: string,
+  operator: string,
+  nowS: number,
+): string {
+  return signJwt(
+    { iss: SSO_ISSUER, aud: audience, operator, iat: nowS, exp: nowS + SSO_TTL_S },
+    secret,
+  );
 }

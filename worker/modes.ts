@@ -16,7 +16,11 @@ import type { SimData } from './data.js';
 export function clonesOf(personas: Persona[], targetUsers: number): Persona[] {
   return personas.flatMap((p) => {
     const n = Math.max(1, Math.round(p.populationWeight * targetUsers));
-    return Array.from({ length: n }, (_, i) => ({ ...p, id: `${p.id}-c${i + 1}`, populationWeight: p.populationWeight / n }));
+    return Array.from({ length: n }, (_, i) => ({
+      ...p,
+      id: `${p.id}-c${i + 1}`,
+      populationWeight: p.populationWeight / n,
+    }));
   });
 }
 
@@ -32,7 +36,9 @@ export function selectPersonas(all: Persona[], ids: string[]): Persona[] {
 export function newCredentials(runId: string) {
   return (p: Persona) => {
     const clone = /^(.*)-c(\d+)$/.exec(p.id);
-    const email = clone ? syntheticEmail(runId, clone[1] as string, Number(clone[2])) : syntheticEmail(runId, p.id);
+    const email = clone
+      ? syntheticEmail(runId, clone[1] as string, Number(clone[2]))
+      : syntheticEmail(runId, p.id);
     return { email, password: randomPassword() };
   };
 }
@@ -50,18 +56,45 @@ export interface DriverSetup {
   close: () => Promise<void>;
 }
 
-export async function browserDrivers(config: RunConfig, runId: string, data: SimData, opts: { launch: () => Promise<Browser>; runHeader: () => string; screenshotsDir: string; stepTimeoutMs: number }): Promise<DriverSetup> {
+export async function browserDrivers(
+  config: RunConfig,
+  runId: string,
+  data: SimData,
+  opts: {
+    launch: () => Promise<Browser>;
+    runHeader: () => string;
+    screenshotsDir: string;
+    stepTimeoutMs: number;
+  },
+): Promise<DriverSetup> {
   const browser = await opts.launch();
   const dir = join(opts.screenshotsDir, runId);
   mkdirSync(dir, { recursive: true });
   return {
-    openDriver: (persona) => BrowserDriver.open(browser, persona, { baseUrl: config.targetUrl.replace(/\/$/, ''), runHeader: opts.runHeader, screenshotDir: dir, stepTimeoutMs: opts.stepTimeoutMs, commonUi: data.commonUi }),
+    openDriver: (persona) =>
+      BrowserDriver.open(browser, persona, {
+        baseUrl: config.targetUrl.replace(/\/$/, ''),
+        runHeader: opts.runHeader,
+        screenshotDir: dir,
+        stepTimeoutMs: opts.stepTimeoutMs,
+        commonUi: data.commonUi,
+      }),
     close: () => browser.close(),
   };
 }
 
-export function apiDrivers(config: RunConfig, opts: { runHeader: () => string; fetchImpl: typeof fetch; requestsPerSecond: number }): DriverSetup {
+export function apiDrivers(
+  config: RunConfig,
+  opts: { runHeader: () => string; fetchImpl: typeof fetch; requestsPerSecond: number },
+): DriverSetup {
   const limiter = new RateLimiter(opts.requestsPerSecond);
-  const make = async (): Promise<Driver> => new ApiDriver({ baseUrl: config.targetUrl.replace(/\/$/, ''), runHeader: opts.runHeader, fetchImpl: opts.fetchImpl, now: Date.now, limiter });
+  const make = async (): Promise<Driver> =>
+    new ApiDriver({
+      baseUrl: config.targetUrl.replace(/\/$/, ''),
+      runHeader: opts.runHeader,
+      fetchImpl: opts.fetchImpl,
+      now: Date.now,
+      limiter,
+    });
   return { openDriver: make, close: async () => {} };
 }

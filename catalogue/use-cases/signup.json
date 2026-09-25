@@ -5,16 +5,10 @@
     "fr": "Inscription"
   },
   "area": "acquisition",
-  "requires": [
-    "landing"
-  ],
+  "requires": ["landing"],
   "planGate": "free",
   "minutes": 3,
-  "mistakes": [
-    "typoEmail",
-    "weakPassword",
-    "forgetTerms"
-  ],
+  "mistakes": ["typoEmail", "weakPassword", "forgetTerms"],
   "ui": [
     {
       "action": "goto",
@@ -93,9 +87,7 @@
         "acceptedTerms": true
       },
       "auth": false,
-      "expectStatus": [
-        201
-      ]
+      "expectStatus": [201]
     }
   ],
   "success": {

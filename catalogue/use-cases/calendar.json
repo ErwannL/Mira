@@ -5,9 +5,7 @@
     "fr": "Calendrier"
   },
   "area": "planning",
-  "requires": [
-    "create-card"
-  ],
+  "requires": ["create-card"],
   "planGate": "free",
   "minutes": 1,
   "ui": [

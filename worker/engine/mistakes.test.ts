@@ -10,7 +10,11 @@ const never = { ...createPrng(1), chance: () => false };
 
 describe('mistakes', () => {
   it('picks allowed mistakes only', () => {
-    expect(pickMistakes(signup, persona('retired-volunteer'), always)).toEqual(['typoEmail', 'weakPassword', 'forgetTerms']);
+    expect(pickMistakes(signup, persona('retired-volunteer'), always)).toEqual([
+      'typoEmail',
+      'weakPassword',
+      'forgetTerms',
+    ]);
     expect(pickMistakes(signup, persona('retired-volunteer'), never)).toEqual([]);
     expect(pickMistakes(landing, persona('retired-volunteer'), always)).toEqual([]);
   });

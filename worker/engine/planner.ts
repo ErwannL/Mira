@@ -16,7 +16,8 @@ export function isCritical(useCase: UseCase): boolean {
 /** Goals in order: onboarding first when the persona likes tutorials (decided once, seeded). */
 export function lifeGoals(persona: Persona, prng: Prng): string[] {
   const goals = persona.goalFeatures.filter((g) => g !== 'onboarding');
-  const wantsTutorial = persona.goalFeatures.includes('onboarding') || prng.chance(persona.tutorialAffinity);
+  const wantsTutorial =
+    persona.goalFeatures.includes('onboarding') || prng.chance(persona.tutorialAffinity);
   return wantsTutorial ? ['onboarding', ...goals] : goals;
 }
 
@@ -37,7 +38,10 @@ export function sessionPlan(
   if (prng.chance(persona.curiosity)) {
     const known = new Set([...done, ...plan.map((u) => u.id)]);
     const explorable = catalogue.useCases.filter(
-      (u) => !known.has(u.id) && !NOT_EXPLORED.has(u.id) && u.requires.every((r) => memory.succeeded.includes(r)),
+      (u) =>
+        !known.has(u.id) &&
+        !NOT_EXPLORED.has(u.id) &&
+        u.requires.every((r) => memory.succeeded.includes(r)),
     );
     if (explorable.length > 0) plan.push(prng.pick(explorable));
   }
