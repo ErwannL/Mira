@@ -1,4 +1,4 @@
-import { createHmac } from 'node:crypto';
+import { createHmac, randomBytes } from 'node:crypto';
 import { safeEqual } from './synthetic.js';
 
 const b64url = (buf: Buffer | string): string => Buffer.from(buf).toString('base64url');
@@ -45,8 +45,11 @@ export function mintSsoToken(
   nowS: number,
   target?: string,
 ): string {
+  // `jti` makes every token unique: two tokens minted in the same second for the same operator
+  // would otherwise be byte-identical, and single use would refuse the second as REUSED.
+  const jti = randomBytes(12).toString('base64url');
   return signJwt(
-    { iss: SSO_ISSUER, aud: audience, operator, iat: nowS, exp: nowS + SSO_TTL_S, target },
+    { iss: SSO_ISSUER, aud: audience, operator, iat: nowS, exp: nowS + SSO_TTL_S, target, jti },
     secret,
   );
 }

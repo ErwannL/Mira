@@ -107,7 +107,9 @@ documentation, not a route dump. Verification and cleanup are proved by being ca
 **Token endpoint (console backend):** admin-only, reachable from localhost/the console only.
 Orqea's is `POST /api/admin/figura/handoff` → `{token, expiresIn: 60}` (404 in production). `token`
 is a JWT HS256 signed with `FIGURA_SSO_SECRET`: header `{alg:"HS256",typ:"JWT"}`, claims
-`{iss:"orqea-admin-console", aud:"<FIGURA_APP_ID>", operator:"<display name>", target:"<env>", iat, exp: iat+60}`.
+`{iss:"orqea-admin-console", aud:"<FIGURA_APP_ID>", operator:"<display name>", target:"<env>", jti:"<random>", iat, exp: iat+60}`.
+`jti` should be random: without it, two tokens minted in the same second for the same operator are
+byte-identical and single use refuses the second one as `REUSED` (Figura does not require it).
 `operator` is for Figura's audit log only (no account is provisioned). `target` (optional, signed)
 is the Orqea environment the console inspects: Orqea sends `local` for its local stack and `recette`
 for recette. It must match `[a-z0-9][a-z0-9-]{0,39}` or the token is refused with `BAD_TARGET`.

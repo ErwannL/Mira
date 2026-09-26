@@ -37,6 +37,15 @@ describe('jwt', () => {
       operator: 'Ops',
       iat: 100,
       exp: 160,
+      jti: expect.stringMatching(/^[\w-]{16}$/),
+    });
+  });
+  it('minted SSO tokens are unique even within one second (single use needs it)', () => {
+    const a = mintSsoToken('s'.repeat(40), 'figura', 'Ops', 1_900_000_000, 'local');
+    const b = mintSsoToken('s'.repeat(40), 'figura', 'Ops', 1_900_000_000, 'local');
+    expect(a).not.toBe(b);
+    expect(verifyJwtSignature(a, 's'.repeat(40))).toMatchObject({
+      payload: { operator: 'Ops', target: 'local', jti: expect.any(String) },
     });
   });
 });
