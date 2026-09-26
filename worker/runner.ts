@@ -3,6 +3,7 @@ import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Db } from '../app/db/pool.js';
 import { EventWriter } from '../app/db/events.js';
+import { allPersonas } from '../app/db/vigie.js';
 import { DbMemoryStore } from '../app/db/memory.js';
 import { heartbeat, isCancelRequested, transition, type RunRow } from '../app/db/runs.js';
 import type { Plan } from '../shared/plans.js';
@@ -23,6 +24,7 @@ import {
   newCredentials,
   selectPersonas,
 } from './modes.js';
+import { replayScenario } from './replay.js';
 import { OrqeaClient, type Endpoint, type TargetInfo } from './target/client.js';
 import { checkDrift, type DriftReport } from './target/drift.js';
 import { guardTarget, REFUSAL_MESSAGES } from './target/guard.js';
@@ -72,7 +74,11 @@ async function prepare(
   const c = run.config;
   const personas = selectPersonas(deps.data.personas, c.personaIds);
   const accounts =
-    c.kind === 'journey' ? personas.length : clonesOf(personas, c.targetUsers).length;
+    c.kind === 'replay'
+      ? 1
+      : c.kind === 'journey'
+        ? personas.length
+        : clonesOf(personas, c.targetUsers).length;
   const guard = await guardTarget(
     {
       targetUrl: target.api,
@@ -111,8 +117,11 @@ async function prepare(
 export async function executeRun(
   run: RunRow,
   cfg: WorkerConfig,
-  deps: WorkerDeps,
+  base: WorkerDeps,
 ): Promise<RunRow> {
+  // Personas pushed by Vigie are usable like the catalogue's (docs/VIGIE.md).
+  const personas = await allPersonas(base.db, base.data.personas);
+  const deps = { ...base, data: { ...base.data, personas } };
   const target = effectiveTarget(run.config, cfg.targets);
   if (!target) {
     return transition(deps.db, run.id, 'refused', cfg.workerId, TARGET_NOT_CONFIGURED, {
@@ -133,6 +142,12 @@ export async function executeRun(
   let summary: Record<string, unknown> = { drift: prepared.drift };
   let cancelled = false;
   try {
+    if (run.config.kind === 'replay') {
+      const replay = await replayRun(run, cfg, deps, prepared);
+      summary = { ...summary, replay };
+      if (replay.incomplete) error = `REPLAY_INCOMPLETE: ${replay.incomplete}`;
+      return await finish(run, cfg, deps, prepared.client, { error, summary, cancelled });
+    }
     const result = await simulateRun(run, cfg, deps, prepared);
     cancelled = result.summary.stopped;
     summary = { ...summary, ...result.summary, plans: result.plans.length };
@@ -152,6 +167,31 @@ export async function executeRun(
     error = (e as Error).message;
   }
   return finish(run, cfg, deps, prepared.client, { error, summary, cancelled });
+}
+
+/** A Vigie scenario, one persona, step by step in a browser (docs/VIGIE.md). */
+async function replayRun(run: RunRow, cfg: WorkerConfig, deps: WorkerDeps, prepared: Prepared) {
+  await transition(deps.db, run.id, 'running', cfg.workerId, null, {
+    catalogue_version: deps.data.catalogue.version,
+    weights_version: deps.data.weights.version,
+    target_version: prepared.info.version,
+  });
+  const drivers = await browserDrivers(prepared.target, run.id, deps.data, {
+    launch: deps.launch,
+    runHeader: () => prepared.client.runHeader(),
+    screenshotsDir: cfg.screenshotsDir,
+    stepTimeoutMs: cfg.stepTimeoutMs,
+  });
+  try {
+    return await replayScenario(run.id, run.config.replay!, {
+      catalogue: deps.data.catalogue,
+      openDriver: drivers.openDriver,
+      requestVerifyUrl: (email) => prepared.client.requestVerifyUrl(email),
+      sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+    });
+  } finally {
+    await drivers.close();
+  }
 }
 
 async function simulateRun(

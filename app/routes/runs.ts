@@ -10,6 +10,7 @@ import type { AppConfig } from '../config.js';
 import type { Db } from '../db/pool.js';
 import { eventsOf } from '../db/events.js';
 import { audit } from '../db/misc.js';
+import { allPersonas } from '../db/vigie.js';
 import {
   createRun,
   deleteRun,
@@ -60,7 +61,7 @@ function runRoutes1(app: FastifyInstance, cfg: AppConfig, db: Db, data: SimData)
   }));
 
   app.get('/api/meta', async () => ({
-    personas: data.personas.map((p) => ({
+    personas: (await allPersonas(db, data.personas)).map((p) => ({
       id: p.id,
       displayName: p.displayName,
       locale: p.locale,
@@ -97,7 +98,8 @@ function runRoutes1(app: FastifyInstance, cfg: AppConfig, db: Db, data: SimData)
         issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`),
       });
     const config: RunConfig = parsed.data;
-    const unknown = config.personaIds.filter((id) => !data.personas.some((p) => p.id === id));
+    const personas = await allPersonas(db, data.personas);
+    const unknown = config.personaIds.filter((id) => !personas.some((p) => p.id === id));
     if (unknown.length)
       return reply
         .code(400)

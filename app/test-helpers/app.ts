@@ -31,6 +31,7 @@ export async function makeApp(
     uiDir: join(tmpdir(), 'no-ui-here'),
     maxRunsListed: 50,
     targets: {},
+    vigieSecret: null,
     ...overrides,
   };
   const app = await buildApp(cfg, { db, data, nowS, logger: false });

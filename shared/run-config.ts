@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TARGET_NAME } from './targets.js';
+import { vigieScenarioSchema } from './vigie.js';
 
 export const RUN_STATUSES = [
   'draft',
@@ -32,7 +33,9 @@ export const TRANSITIONS: Record<RunStatus, RunStatus[]> = {
 
 export const runConfigSchema = z
   .object({
-    kind: z.enum(['journey', 'volume']),
+    /** `replay`: a Vigie scenario replayed step by step by one persona (docs/VIGIE.md). */
+    kind: z.enum(['journey', 'volume', 'replay']),
+    replay: vigieScenarioSchema.nullable().default(null),
     label: z.string().max(120).default(''),
     /** Named target (FIGURA_TARGETS); when set, the server fills targetUrl/webUrl from it. */
     target: z.string().regex(TARGET_NAME).nullable().default(null),

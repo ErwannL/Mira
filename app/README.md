@@ -4,7 +4,7 @@ Figura's HTTP service: the operator API, single sign-on from the Orqea admin con
 
 ## How it works
 
-`server.ts` builds Fastify with `security.ts` (404 for non-local `Host`, strict CSP with `frame-ancestors`), `auth.ts` (`POST /auth/sso` → single-use JWT check in `sso.ts` → httpOnly session; every `/api` route needs the session, state-changing calls also need `x-figura: 1`) and the routes. `config.ts` reads the environment; `start.ts` migrates and listens; `main.ts` is the one-line entrypoint.
+`server.ts` builds Fastify with `security.ts` (404 for non-local `Host` — except `/api/vigie/*` with Vigie's valid Bearer —, strict CSP with `frame-ancestors`), `auth.ts` (`POST /auth/sso` → single-use JWT check in `sso.ts` → httpOnly session; every `/api` route needs the session, state-changing calls also need `x-figura: 1`) and the routes. `config.ts` reads the environment; `start.ts` migrates and listens; `main.ts` is the one-line entrypoint.
 
 ## Sub-folders
 

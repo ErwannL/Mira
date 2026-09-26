@@ -8,6 +8,7 @@ import type { AppConfig } from './config.js';
 import type { Db } from './db/pool.js';
 import { reportRoutes } from './routes/reports.js';
 import { runRoutes } from './routes/runs.js';
+import { vigieRoutes } from './routes/vigie.js';
 import { securityHooks } from './security.js';
 
 /** Logs never contain bodies, headers, cookies, tokens or query strings. */
@@ -29,13 +30,18 @@ export async function buildApp(
     trustProxy: false,
   });
   await app.register(cookie);
-  securityHooks(app, { loopbackOnly: cfg.loopbackOnly, consoleOrigins: cfg.consoleOrigins });
+  securityHooks(app, {
+    loopbackOnly: cfg.loopbackOnly,
+    consoleOrigins: cfg.consoleOrigins,
+    vigieSecret: cfg.vigieSecret,
+  });
   app.get('/health', async () => {
     await deps.db.query('select 1');
     return { ok: true };
   });
   authRoutes(app, cfg, deps.db, deps.nowS);
   runRoutes(app, cfg, deps.db, deps.data);
+  vigieRoutes(app, cfg, deps.db, deps.data);
   reportRoutes(app, cfg, deps.db);
   if (existsSync(cfg.uiDir)) {
     // The UI shell holds no data; without a session it only says "open me from the console".

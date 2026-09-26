@@ -29,6 +29,8 @@ export interface StepOutcome {
   screenshot: string | null;
   apiCalls: ApiCall[];
   wallMs: number;
+  /** HTTP status of the last page load of the step (browser only; null otherwise). */
+  navigationStatus: number | null;
   /** Context variables captured by the step (ids…), merged into persona memory. */
   captured: Record<string, string>;
   /** Pages (paths) visited during the step. */

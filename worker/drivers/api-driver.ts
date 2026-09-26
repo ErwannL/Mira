@@ -84,6 +84,7 @@ export class ApiDriver implements Driver {
       apiCalls: calls,
       wallMs,
       captured,
+      navigationStatus: null,
       pages: [],
     };
   }

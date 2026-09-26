@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { hostnameOf, isLoopbackHost } from '../shared/synthetic.js';
+import { hostnameOf, isLoopbackHost, safeEqual } from '../shared/synthetic.js';
 
 /** Strict CSP; embedding allowed only by the configured admin-console origins. */
 export function csp(consoleOrigins: string[]): string {
@@ -21,13 +21,27 @@ export function csp(consoleOrigins: string[]): string {
 export const REPORT_CSP =
   "default-src 'none'; style-src 'unsafe-inline'; img-src data:; frame-ancestors 'none'; sandbox";
 
+/** `Authorization: Bearer <secret>` for the Vigie service API, compared in constant time. */
+export function vigieAuthorized(authorization: unknown, secret: string | null): boolean {
+  return (
+    secret !== null &&
+    typeof authorization === 'string' &&
+    safeEqual(authorization, `Bearer ${secret}`)
+  );
+}
+
+export const isVigiePath = (url: string): boolean => url.startsWith('/api/vigie/');
+
 export function securityHooks(
   app: FastifyInstance,
-  o: { loopbackOnly: boolean; consoleOrigins: string[] },
+  o: { loopbackOnly: boolean; consoleOrigins: string[]; vigieSecret: string | null },
 ): void {
-  // Loopback lock: a request whose Host is not local gets 404 — the tool does not exist from elsewhere.
+  // Loopback lock: a request whose Host is not local gets 404 — the tool does not exist from
+  // elsewhere. Sole exception: Vigie's service calls (docker network, `figura-app:4000`) on
+  // /api/vigie/* with a valid Bearer.
   app.addHook('onRequest', async (req, reply) => {
-    if (o.loopbackOnly && !isLoopbackHost(hostnameOf(String(req.headers.host)))) {
+    const vigie = isVigiePath(req.url) && vigieAuthorized(req.headers.authorization, o.vigieSecret);
+    if (o.loopbackOnly && !vigie && !isLoopbackHost(hostnameOf(String(req.headers.host)))) {
       return reply.code(404).send({ error: 'NOT_FOUND' });
     }
   });

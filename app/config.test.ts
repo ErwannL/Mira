@@ -20,6 +20,15 @@ describe('app config', () => {
       targets: {},
     });
   });
+  it('FIGURA_VIGIE_SECRET: null when absent or short, refused when equal to another secret', () => {
+    const cfg = (v?: string) =>
+      appConfigFromEnv({ ...env, FIGURA_VIGIE_SECRET: v }, { uiDir: '/ui' });
+    expect(cfg().vigieSecret).toBeNull();
+    expect(cfg('short').vigieSecret).toBeNull();
+    expect(cfg('v'.repeat(32)).vigieSecret).toBe('v'.repeat(32));
+    expect(() => cfg(env.FIGURA_SSO_SECRET)).toThrow('FIGURA_VIGIE_SECRET must differ');
+    expect(() => cfg(env.FIGURA_SESSION_SECRET)).toThrow('FIGURA_VIGIE_SECRET must differ');
+  });
   it('reads named Orqea targets from FIGURA_TARGETS, refusing a malformed one', () => {
     const targets = '{"recette":{"api":"http://host.docker.internal:5102"}}';
     expect(appConfigFromEnv({ ...env, FIGURA_TARGETS: targets }, { uiDir: '/ui' }).targets).toEqual(

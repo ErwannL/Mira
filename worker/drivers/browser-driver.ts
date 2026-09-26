@@ -61,6 +61,7 @@ export class BrowserDriver implements Driver {
   private paywall: Paywall | null = null;
   private pending: Promise<void>[] = [];
   private measuredUrl = '';
+  private navStatus: number | null = null;
 
   private constructor(
     private readonly context: BrowserContext,
@@ -141,6 +142,7 @@ export class BrowserDriver implements Driver {
     this.calls = [];
     this.paywall = null;
     this.pending = [];
+    this.navStatus = null;
     const pages: string[] = [];
     let error: string | null = null;
     try {
@@ -155,8 +157,13 @@ export class BrowserDriver implements Driver {
         this.facts.targetUnnamed = (await this.measure()).unnamedByRole[failure.role] !== undefined;
     }
     await Promise.all(this.pending);
+    // Where a click left the persona (e.g. the new board's page) counts as a page seen too.
+    const here = new URL(this.page.url()).pathname;
+    if (pages.at(-1) !== here) pages.push(here);
     this.absorb(await this.measure());
     this.facts.paywall = this.paywall !== null;
+    // The persona's time, not Figura's: measured before the evidence screenshot.
+    const wallMs = Date.now() - started;
     const screenshot = await this.screenshot(ctx.label);
     return {
       ok: error === null,
@@ -165,7 +172,8 @@ export class BrowserDriver implements Driver {
       paywall: this.paywall,
       screenshot,
       apiCalls: this.calls,
-      wallMs: Date.now() - started,
+      wallMs,
+      navigationStatus: this.navStatus,
       captured: {},
       pages,
     };
@@ -183,7 +191,8 @@ export class BrowserDriver implements Driver {
           ? this.opts.baseUrl + fillTemplate(step.path, ctx.vars)
           : (ctx.vars.verifyUrl as string);
       const t0 = Date.now();
-      await this.page.goto(url, { waitUntil: 'load' });
+      const response = await this.page.goto(url, { waitUntil: 'load' });
+      this.navStatus = response?.status() ?? null;
       this.facts.timeToInteractiveMs = Math.max(this.facts.timeToInteractiveMs, Date.now() - t0);
       pages.push(new URL(this.page.url()).pathname);
       this.measuredUrl = this.page.url();

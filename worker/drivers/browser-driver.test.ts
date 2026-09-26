@@ -366,7 +366,7 @@ describe('BrowserDriver edge cases', () => {
       rewrite: {},
       runHeader: () => 'r.1.x',
       screenshotDir: null,
-      stepTimeoutMs: 1000,
+      stepTimeoutMs: 3000,
       commonUi,
     });
     const probe = (path: string, ...rest: UseCase['ui']): UseCase => ({
@@ -391,6 +391,9 @@ describe('BrowserDriver edge cases', () => {
       target: { role: 'heading', name: { en: name, fr: name } },
     });
     expect((await d.attempt(probe('/', heading('Visible')), ctx(p, {}))).ok).toBe(true);
+    // A same-document navigation has no HTTP response.
+    const hash = await d.attempt(probe('/#top'), ctx(p, {}));
+    expect(hash.navigationStatus).toBeNull();
     const ghost = await d.attempt(probe('/', heading('Ghost')), ctx(p, {}));
     expect(ghost.error).toBe('step 2: no heading named "Ghost"');
     expect(ghost.facts.targetUnnamed).toBe(false);

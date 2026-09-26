@@ -5,6 +5,7 @@ import { sha256 } from '../shared/crypto.js';
 import type { AppConfig } from './config.js';
 import type { Db } from './db/pool.js';
 import { audit, consumeSsoToken, createSession, deleteSession, findSession } from './db/misc.js';
+import { isVigiePath } from './security.js';
 import { verifySsoToken } from './sso.js';
 
 export const SESSION_COOKIE = 'figura_session';
@@ -61,7 +62,8 @@ export function authRoutes(app: FastifyInstance, cfg: AppConfig, db: Db, nowS: (
 
   /** Every /api route needs a session; state-changing calls also need the anti-CSRF header. */
   app.addHook('preHandler', async (req: FastifyRequest, reply: FastifyReply) => {
-    if (!req.url.startsWith('/api/')) return;
+    // Vigie's service API authenticates with its own Bearer (routes/vigie.ts), never a session.
+    if (!req.url.startsWith('/api/') || isVigiePath(req.url)) return;
     const token = req.cookies[SESSION_COOKIE];
     const session = token ? await findSession(db, idHash(token)) : null;
     if (!session) return reply.code(401).send({ error: 'NO_SESSION' });

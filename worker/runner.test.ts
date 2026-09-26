@@ -8,6 +8,8 @@ import type { Db } from '../app/db/pool.js';
 import { createRun, getRun, requestCancel, transition, transitionsOf } from '../app/db/runs.js';
 import { getReport } from '../app/db/misc.js';
 import { eventsOf } from '../app/db/events.js';
+import { saveVigieSet } from '../app/db/vigie.js';
+import type { VigieScenario } from '../shared/vigie.js';
 import { dataKey } from '../shared/crypto.js';
 import { repoRoot } from '../shared/paths.js';
 import { runConfigSchema, type RunConfigInput } from '../shared/run-config.js';
@@ -177,6 +179,68 @@ describe('executeRun', () => {
     expect(done.summary!.drift).toEqual([
       { useCase: 'notes-reminder', method: 'POST', path: '/api/notes' },
     ]);
+  });
+
+  it('Vigie replay: one persona in Chromium against the target, evidence per step, cleanup', async () => {
+    const replay: VigieScenario = {
+      schema: 1,
+      sourceEnv: 'prod',
+      targetEnv: 'dev',
+      persona: { plan: 'free', device: 'desktop', locale: 'en' },
+      steps: [
+        { action: 'login', target: null },
+        { action: 'use_feature', target: 'card.create' },
+        { action: 'wait', target: 5 },
+        {
+          action: 'visit',
+          target: '/board/:boardId',
+          expect: { maxDurationMs: 60_000, status: 200 },
+        },
+        { action: 'visit', target: '/dashboard', expect: { maxDurationMs: 1 } },
+      ],
+    };
+    const run = await queued('vr1', { kind: 'replay', replay, personaIds: [] });
+    const done = await executeRun(run, cfg, { ...keepOpen, db });
+    expect(done.status, done.error ?? '').toBe('done');
+    const r = done.summary!.replay as {
+      reproduced: boolean;
+      steps: { ok: boolean; breached: boolean; status: number | null }[];
+    };
+    expect(r.steps.map((s) => [s.ok, s.breached])).toEqual([
+      [true, false],
+      [true, false],
+      [true, false],
+      [true, false],
+      [true, true], // nothing loads in 1 ms
+    ]);
+    expect(r.steps[3]!.status).toBe(200);
+    expect(r.reproduced).toBe(true);
+    expect(fake.deps.store.users.size).toBe(0);
+    const click = await queued('vr2', {
+      kind: 'replay',
+      replay: { ...replay, steps: [{ action: 'click', target: 'x', expect: { status: 200 } }] },
+    });
+    const failed = await executeRun(click, cfg, { ...keepOpen, db });
+    expect(failed.error).toContain('REPLAY_INCOMPLETE: step 0: click steps');
+  });
+
+  it('personas pushed by Vigie are usable by runs', async () => {
+    const student = data.personas.find((p) => p.id === 'student')!;
+    await saveVigieSet(db, {
+      setId: 'set1',
+      sourceEnv: 'prod',
+      targetEnv: 'dev',
+      personas: [{ ...student, id: 'vigie-students' }],
+    });
+    const run = await queued('vp1', {
+      kind: 'volume',
+      targetUsers: 1,
+      personaIds: ['vigie-students'],
+      totalSimulatedDays: 0.1,
+    });
+    const done = await executeRun(run, cfg, deps());
+    expect(done.status).toBe('done');
+    expect(Object.keys(done.summary!.stages as object)).toEqual(['vigie-students-c1']);
   });
 
   it('named targets: the worker uses its own FIGURA_TARGETS; an unknown name is refused', async () => {

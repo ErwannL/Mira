@@ -18,6 +18,11 @@ export interface AppConfig {
   maxRunsListed: number;
   /** Named Orqea targets (FIGURA_TARGETS). */
   targets: Targets;
+  /**
+   * Bearer of the Vigie service API (`FIGURA_VIGIE_SECRET`); null when absent or shorter than 32
+   * characters, which closes every /api/vigie/* route (401).
+   */
+  vigieSecret: string | null;
 }
 
 function secret(env: Env, key: string): string {
@@ -31,6 +36,10 @@ export function appConfigFromEnv(env: Env, defaults: { uiDir: string }): AppConf
   const ssoSecret = secret(env, 'FIGURA_SSO_SECRET');
   if (sessionSecret === ssoSecret)
     throw new Error('FIGURA_SSO_SECRET must differ from FIGURA_SESSION_SECRET');
+  const vigie = env.FIGURA_VIGIE_SECRET ?? '';
+  const vigieSecret = vigie.length >= 32 ? vigie : null;
+  if (vigieSecret !== null && [sessionSecret, ssoSecret].includes(vigieSecret))
+    throw new Error('FIGURA_VIGIE_SECRET must differ from every other secret');
   const databaseUrl = env.FIGURA_DATABASE_URL ?? '';
   if (!databaseUrl) throw new Error('FIGURA_DATABASE_URL must be set');
   // Orqea's admin console runs on :3002; the fake console on :4100.
@@ -57,5 +66,6 @@ export function appConfigFromEnv(env: Env, defaults: { uiDir: string }): AppConf
     uiDir: env.FIGURA_UI_DIR ?? defaults.uiDir,
     maxRunsListed: 200,
     targets: parseTargets(env.FIGURA_TARGETS),
+    vigieSecret,
   };
 }
