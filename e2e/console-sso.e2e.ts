@@ -1,4 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+
+/** CI runners can take longer than vitest's 1 s default to boot the SPA and sign in. */
+const SLOW = { timeout: 15_000 };
 import { chromium, type Browser } from 'playwright';
 import { join } from 'node:path';
 import { makeApp, SSO } from '../app/test-helpers/app.js';
@@ -47,13 +50,15 @@ describe('admin console embedding (e2e)', () => {
       })
       .toBe(true);
     await expect
-      .poll(async () => frame.getByRole('heading', { name: 'Runs' }).isVisible())
+      .poll(async () => frame.getByRole('heading', { name: 'Runs' }).isVisible(), SLOW)
       .toBe(true);
     const inner = page.frames().find((f) => f.url().startsWith(appUrl))!;
     expect(inner.url()).not.toContain('sso=');
     // The Orqea the console inspects is preselected for new runs.
     await inner.goto(`${appUrl}/#/new`);
-    await expect.poll(async () => frame.getByText('Testing Orqea “local”').isVisible()).toBe(true);
+    await expect
+      .poll(async () => frame.getByText('Testing Orqea “local”').isVisible(), SLOW)
+      .toBe(true);
     expect(await frame.getByRole('combobox', { name: 'Orqea to test' }).inputValue()).toBe('local');
     await page.close();
   });
@@ -62,7 +67,7 @@ describe('admin console embedding (e2e)', () => {
     const page = await browser.newPage();
     await page.goto(appUrl);
     await expect
-      .poll(async () => page.getByText('Open me from the Orqea admin console.').isVisible())
+      .poll(async () => page.getByText('Open me from the Orqea admin console.').isVisible(), SLOW)
       .toBe(true);
     expect(await page.locator('form, input').count()).toBe(0);
     await page.close();
@@ -74,11 +79,11 @@ describe('admin console embedding (e2e)', () => {
       token: string;
     };
     await page.goto(`${appUrl}/#sso=${token}`);
-    await expect.poll(async () => page.getByText(/Signed in as/).isVisible()).toBe(true);
+    await expect.poll(async () => page.getByText(/Signed in as/).isVisible(), SLOW).toBe(true);
     const second = await browser.newPage();
     await second.goto(`${appUrl}/#sso=${token}`);
     await expect
-      .poll(async () => second.getByText('Open me from the Orqea admin console.').isVisible())
+      .poll(async () => second.getByText('Open me from the Orqea admin console.').isVisible(), SLOW)
       .toBe(true);
     await page.close();
     await second.close();
