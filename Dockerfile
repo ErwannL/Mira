@@ -21,6 +21,8 @@ COPY config ./config
 COPY app/db/migrations ./app/db/migrations
 
 FROM runtime-base AS app
+# Writable default for screenshots (an embedding compose mounts a shared volume there).
+ENV FIGURA_SCREENSHOTS_DIR=/data/screenshots
 RUN mkdir -p /data/screenshots && chown -R node:node /data
 USER node
 EXPOSE 4000
@@ -38,6 +40,7 @@ CMD ["node", "dist/fake-orqea/main.js"]
 FROM mcr.microsoft.com/playwright:v1.56.1-noble AS worker
 WORKDIR /opt/figura
 ENV NODE_ENV=production
+ENV FIGURA_SCREENSHOTS_DIR=/data/screenshots
 COPY --from=runtime-base /opt/figura ./
 RUN mkdir -p /data/screenshots && chown -R 1000:1000 /data
 USER 1000:1000
