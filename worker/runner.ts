@@ -28,6 +28,7 @@ import { replayScenario } from './replay.js';
 import { OrqeaClient, type Endpoint, type TargetInfo } from './target/client.js';
 import { checkDrift, type DriftReport } from './target/drift.js';
 import { guardTarget, REFUSAL_MESSAGES } from './target/guard.js';
+import { waitReady } from './target/ready.js';
 
 export interface WorkerConfig {
   workerId: string;
@@ -43,6 +44,9 @@ export interface WorkerConfig {
   rowsPerAccount: number;
   /** Named Orqea targets (FIGURA_TARGETS): the worker's copy is authoritative for URLs and rewrites. */
   targets: Targets;
+  /** Browser runs wait this long for the web app and API to answer (FIGURA_READY_TIMEOUT_MS). */
+  readyTimeoutMs: number;
+  readyPollMs: number;
 }
 
 export interface WorkerDeps {
@@ -136,6 +140,18 @@ export async function executeRun(
     fetchImpl: deps.fetchImpl,
     nowS: deps.nowS,
   });
+  // Browser runs: the web app and the API must answer first (a dev server may still be compiling).
+  if (run.config.kind !== 'volume') {
+    const notReady = await waitReady([target.web, target.api], {
+      fetchImpl: deps.fetchImpl,
+      timeoutMs: cfg.readyTimeoutMs,
+      pollMs: cfg.readyPollMs,
+    });
+    if (notReady) {
+      const error = `TARGET_NOT_READY: ${notReady} did not answer within ${cfg.readyTimeoutMs} ms`;
+      return transition(deps.db, run.id, 'failed', cfg.workerId, error, { error });
+    }
+  }
   const prepared = await prepare(run, cfg, deps, client, target);
   if (!prepared) return run;
   let error: string | null = null;
@@ -145,7 +161,8 @@ export async function executeRun(
     if (run.config.kind === 'replay') {
       const replay = await replayRun(run, cfg, deps, prepared);
       summary = { ...summary, replay };
-      if (replay.incomplete) error = `REPLAY_INCOMPLETE: ${replay.incomplete}`;
+      if (replay.unreachable) error = `TARGET_UNREACHABLE: ${replay.unreachable}`;
+      else if (replay.incomplete) error = `REPLAY_INCOMPLETE: ${replay.incomplete}`;
       return await finish(run, cfg, deps, prepared.client, { error, summary, cancelled });
     }
     const result = await simulateRun(run, cfg, deps, prepared);

@@ -26,6 +26,8 @@ export interface ReplayResult {
   reproduced: boolean;
   /** An expectation could not be checked (step not replayable, setup failed): not a verdict. */
   incomplete: string | null;
+  /** The target never answered a step: no evidence either way (the run fails TARGET_UNREACHABLE). */
+  unreachable: string | null;
   steps: ReplayStep[];
 }
 
@@ -71,6 +73,9 @@ export function breached(step: VigieStep, r: Pick<ReplayStep, 'ok' | 'durationMs
   return e.status !== undefined && r.status !== e.status;
 }
 
+/** A step got no HTTP response at all: the target is down or still starting. */
+class Unreachable extends Error {}
+
 class Replayer {
   private vars: Record<string, string>;
   private done = new Set<string>();
@@ -111,6 +116,7 @@ class Replayer {
         const m = re.exec(page);
         if (m) this.vars[name] = m[1] as string;
       }
+    if (out.unreachable) throw new Unreachable(`${useCase.id}: ${out.error}`);
     if (out.ok) this.done.add(useCase.id);
     return out;
   }
@@ -202,6 +208,7 @@ export async function replayScenario(
   const r = new Replayer(runId, persona, driver, deps, newCredentials(runId)(persona), known);
   const steps: ReplayStep[] = [];
   let incomplete: string | null = null;
+  let unreachable: string | null = null;
   try {
     for (const [index, s] of scenario.steps.entries()) {
       let row: Omit<ReplayStep, 'breached'>;
@@ -224,12 +231,20 @@ export async function replayScenario(
         replayed = false;
         const error = (e as Error).message;
         row = { index, action: s.action, durationMs: 0, status: null, ok: false, error };
-        if (s.expect && incomplete === null) incomplete = `step ${index}: ${error}`;
+        if (e instanceof Unreachable) unreachable = `step ${index}: ${error}`;
+        else if (s.expect && incomplete === null) incomplete = `step ${index}: ${error}`;
       }
       steps.push({ ...row, breached: replayed && breached(s, row) });
+      // Nothing after a step the target did not answer would be evidence either.
+      if (unreachable) break;
     }
   } finally {
     await driver.close();
   }
-  return { reproduced: steps.some((s) => s.breached), incomplete, steps };
+  return {
+    reproduced: unreachable === null && steps.some((s) => s.breached),
+    incomplete,
+    unreachable,
+    steps,
+  };
 }

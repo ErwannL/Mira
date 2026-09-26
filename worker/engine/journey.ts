@@ -208,6 +208,9 @@ async function attemptUseCase(
       mistakes,
       label: `${persona.id}-s${memory.sessions}-${useCase.id}-${attempt}`,
     });
+    // The target did not answer: not the persona's experience. The run fails as an
+    // infrastructure error; no friction, no decision is recorded from it.
+    if (outcome.unreachable) throw new Error(`TARGET_UNREACHABLE: ${useCase.id}: ${outcome.error}`);
     Object.assign(memory.vars, outcome.captured);
     outcome.pages.forEach((p) => addOnce(memory.pagesSeen, p));
     const friction = frictionOf(outcome.facts, persona, deps.weights, {

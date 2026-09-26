@@ -148,6 +148,20 @@ describe('GET /api/vigie/replays/:runId', () => {
     expect((await call('GET', `/api/vigie/replays/${id2}`)).json.error).toBe(
       'REPLAY_INCOMPLETE: step 0: x',
     );
+    // Vigie keys off these prefixes of the top-level `error`.
+    for (const error of [
+      'TARGET_UNREACHABLE: step 0: vigie-visit: step 1: page.goto: Timeout 8000ms exceeded',
+      'TARGET_NOT_READY: http://frontend:3001 did not answer within 120000 ms',
+    ]) {
+      const idN = (await call('POST', '/api/vigie/replays', { ...SCENARIO, targetEnv: 'dev' })).json
+        .runId as string;
+      await transition(h!.db, idN, 'preparing', 'w');
+      await transition(h!.db, idN, 'failed', 'w', 'x', { error });
+      const got = (await call('GET', `/api/vigie/replays/${idN}`)).json;
+      expect(got.state).toBe('failed');
+      expect(got.error).toBe(error);
+      expect(String(got.error)).toMatch(/^(TARGET_UNREACHABLE|TARGET_NOT_READY)/);
+    }
     const c = await h!.login();
     const journey = await h!.api('POST', '/api/runs', c, {
       config: { kind: 'journey', targetUrl: 'http://localhost:4100' },

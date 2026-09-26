@@ -39,6 +39,8 @@ const cfg: WorkerConfig = {
   cancelPollMs: 20,
   rowsPerAccount: 50,
   targets: {},
+  readyTimeoutMs: 5000,
+  readyPollMs: 50,
 };
 beforeAll(async () => {
   browser = await chromium.launch({ headless: true });
@@ -222,6 +224,45 @@ describe('executeRun', () => {
     });
     const failed = await executeRun(click, cfg, { ...keepOpen, db });
     expect(failed.error).toContain('REPLAY_INCOMPLETE: step 0: click steps');
+  });
+
+  it('TARGET_NOT_READY: a browser run whose target never answers fails before touching accounts', async () => {
+    const run = await queued('nr1', { targetUrl: 'http://127.0.0.1:1' });
+    const quick = { ...cfg, readyTimeoutMs: 200, readyPollMs: 50 };
+    const r = await executeRun(run, quick, deps());
+    expect(r.status).toBe('failed');
+    expect(r.error).toBe('TARGET_NOT_READY: http://127.0.0.1:1 did not answer within 200 ms');
+    expect((await transitionsOf(db, 'nr1')).map((t) => t.to_status)).not.toContain('cleaning');
+  });
+
+  it('TARGET_UNREACHABLE: a navigation without response fails the run, replay or journey', async () => {
+    // The browser goes offline once the target answered the readiness check.
+    const offline = {
+      ...keepOpen,
+      db,
+      launch: async () =>
+        ({
+          newContext: async (o: object) => {
+            const c = await browser.newContext(o);
+            await c.setOffline(true);
+            return c;
+          },
+          close: async () => {},
+        }) as unknown as Browser,
+    };
+    const replay: VigieScenario = {
+      schema: 1,
+      sourceEnv: 'prod',
+      targetEnv: 'dev',
+      persona: { plan: 'free', device: 'desktop', locale: 'en' },
+      steps: [{ action: 'visit', target: '/', expect: { maxDurationMs: 340, status: 200 } }],
+    };
+    const r = await executeRun(await queued('ur1', { kind: 'replay', replay }), cfg, offline);
+    expect(r.status).toBe('failed');
+    expect(r.error).toMatch(/^TARGET_UNREACHABLE: step 0: vigie-visit: step 1: page\.goto: /);
+    expect((r.summary!.replay as { reproduced: boolean }).reproduced).toBe(false);
+    const j = await executeRun(await queued('ur2'), cfg, offline);
+    expect(j.error).toMatch(/^TARGET_UNREACHABLE: landing: step 1: page\.goto: /);
   });
 
   it('personas pushed by Vigie are usable by runs', async () => {

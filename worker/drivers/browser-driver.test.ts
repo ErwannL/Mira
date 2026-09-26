@@ -428,6 +428,8 @@ describe('BrowserDriver edge cases', () => {
     const down = await d.attempt(probe('/'), ctx(p, {}));
     expect(down.ok).toBe(false);
     expect(down.facts.networkErrors).toBeGreaterThan(0);
+    expect(down.unreachable).toBe(true);
+    expect(down.navigationStatus).toBeNull();
     await d.close();
   });
 });

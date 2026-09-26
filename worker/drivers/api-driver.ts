@@ -32,6 +32,7 @@ export class ApiDriver implements Driver {
     const captured: Record<string, string> = {};
     let paywall: Paywall | null = null;
     let error: string | null = null;
+    let unreachable = false;
     for (const step of useCase.api) {
       const vars = { ...ctx.vars, ...captured };
       const res = await this.call(step, vars, ctx);
@@ -58,6 +59,7 @@ export class ApiDriver implements Driver {
         };
         facts.paywall = true;
       } else if (res.status === 0 || res.status >= 500) {
+        unreachable = res.status === 0;
         facts.networkErrors += 1;
       } else {
         facts.validationErrors += 1;
@@ -85,6 +87,7 @@ export class ApiDriver implements Driver {
       wallMs,
       captured,
       navigationStatus: null,
+      unreachable,
       pages: [],
     };
   }

@@ -162,6 +162,40 @@ describe('replaying a Vigie scenario', () => {
     expect(ok.steps[0]!.ok).toBe(true);
   });
 
+  it('a step the target never answered is not evidence: replay stops, unreachable, not reproduced', async () => {
+    const down = (uc: { id: string }) =>
+      uc.id === 'vigie-visit'
+        ? { ok: false, unreachable: true, error: 'step 1: page.goto: Timeout 8000ms exceeded' }
+        : {};
+    const { driver, deps } = setup(down);
+    const r = await replayScenario(
+      'u1',
+      scenario([
+        { action: 'visit', target: '/', expect: { maxDurationMs: 340 } },
+        { action: 'visit', target: '/login' },
+      ]),
+      deps,
+    );
+    expect(r).toMatchObject({
+      reproduced: false,
+      incomplete: null,
+      unreachable: 'step 0: vigie-visit: step 1: page.goto: Timeout 8000ms exceeded',
+    });
+    expect(r.steps).toHaveLength(1);
+    expect(r.steps[0]).toMatchObject({ ok: false, breached: false, status: null });
+    expect(driver.calls).toHaveLength(1);
+    // During the untimed account setup too.
+    const setupDown = setup((uc) =>
+      uc.id === 'signup' ? { ok: false, unreachable: true, error: 'refused' } : {},
+    );
+    const s = await replayScenario(
+      'u2',
+      scenario([{ action: 'login', target: null }]),
+      setupDown.deps,
+    );
+    expect(s.unreachable).toBe('step 0: signup: refused');
+  });
+
   it('statusOf and breached', () => {
     expect(statusOf(outcome())).toBeNull();
     expect(statusOf(outcome({ navigationStatus: 0 }))).toBeNull();

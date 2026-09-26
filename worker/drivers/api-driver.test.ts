@@ -129,10 +129,12 @@ describe('ApiDriver', () => {
     const r = await down.attempt(uc('signup'), ctx(vars));
     expect(r.facts.networkErrors).toBe(1);
     expect(r.error).toBe('POST /api/auth/register → 0');
+    expect(r.unreachable).toBe(true);
     const respond = (status: number, body: string) =>
       (async () => new Response(body, { status })) as typeof fetch;
     const five = await driver({ fetchImpl: respond(503, 'oops') }).attempt(uc('signup'), ctx(vars));
     expect(five.facts.networkErrors).toBe(1);
+    expect(five.unreachable).toBe(false);
     const odd = await driver({ fetchImpl: respond(402, '{}') }).attempt(uc('signup'), ctx(vars));
     expect(odd.paywall).toEqual({ code: 'PAYWALL', featureKey: 'unknown' });
     const plain = await driver({ fetchImpl: respond(200, '{"id":1}') }).attempt(

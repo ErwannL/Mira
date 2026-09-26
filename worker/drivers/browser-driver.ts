@@ -49,6 +49,8 @@ class StepFailure extends Error {
   constructor(
     message: string,
     readonly role: string | null,
+    /** No HTTP response at all (timeout, refused, DNS): the target, not the persona's journey. */
+    readonly unreachable = false,
   ) {
     super(message);
   }
@@ -145,6 +147,7 @@ export class BrowserDriver implements Driver {
     this.navStatus = null;
     const pages: string[] = [];
     let error: string | null = null;
+    let unreachable = false;
     try {
       for (const [i, step] of useCase.ui.entries()) await this.run(step, i, ctx, pages);
       // A use case that ends on an action (e.g. "Choose Pro"): let the navigation it started land
@@ -153,6 +156,7 @@ export class BrowserDriver implements Driver {
     } catch (e) {
       const failure = e as StepFailure;
       error = failure.message;
+      unreachable = failure.unreachable === true;
       if (failure.role)
         this.facts.targetUnnamed = (await this.measure()).unnamedByRole[failure.role] !== undefined;
     }
@@ -174,6 +178,7 @@ export class BrowserDriver implements Driver {
       apiCalls: this.calls,
       wallMs,
       navigationStatus: this.navStatus,
+      unreachable,
       captured: {},
       pages,
     };
@@ -191,7 +196,13 @@ export class BrowserDriver implements Driver {
           ? this.opts.baseUrl + fillTemplate(step.path, ctx.vars)
           : (ctx.vars.verifyUrl as string);
       const t0 = Date.now();
-      const response = await this.page.goto(url, { waitUntil: 'load' });
+      // DOMContentLoaded, not load: a dev server's hot-reload socket delays `load` indefinitely;
+      // every later step waits for its own control anyway.
+      const response = await this.page
+        .goto(url, { waitUntil: 'domcontentloaded' })
+        .catch((e: Error) => {
+          throw new StepFailure(`step ${index + 1}: ${e.message.split('\n')[0]}`, null, true);
+        });
       this.navStatus = response?.status() ?? null;
       this.facts.timeToInteractiveMs = Math.max(this.facts.timeToInteractiveMs, Date.now() - t0);
       pages.push(new URL(this.page.url()).pathname);

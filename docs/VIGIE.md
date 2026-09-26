@@ -49,6 +49,20 @@ are additions to Vigie's `{index, durationMs, status, ok}`).
   if it carried the expectation, the run is `failed` (`REPLAY_INCOMPLETE: step i: …`), never a verdict.
 - `reportUrl` is not sent: a replay has no funnel report; the screenshots are in the run.
 
+## Target down or still starting
+
+- **Before the first step** of a replay (and of any browser run), the worker waits until the web app
+  (the URL the rewrite serves) and the API answer, any HTTP status counting, polling every 2 s within
+  `FIGURA_READY_TIMEOUT_MS` (default 120 000). A dev server still compiling holds or refuses requests.
+  Timeout ⇒ the run is `failed` with `error: "TARGET_NOT_READY: <url> did not answer within <n> ms"`;
+  no account was created.
+- **A step that got no HTTP response at all** (navigation timeout, connection refused, DNS) is not
+  evidence: the replay stops there and ends `failed` with `error: "TARGET_UNREACHABLE: step <i>: …"`,
+  never `reproduced`/`not_reproduced`. `error` is at the top level of the status response, and Vigie
+  keys off these two prefixes.
+- Pages are opened until `DOMContentLoaded`, not `load`: a dev server's hot-reload socket delays
+  `load`, and every later step waits for its own control anyway.
+
 ## `POST /api/vigie/personas` → `202 {accepted, setId}`
 
 Body: Vigie's PersonaSet (schema 1). Same target rules (409) and `400 INVALID_PERSONA_SET`. Each

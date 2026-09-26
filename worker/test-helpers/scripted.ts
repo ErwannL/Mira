@@ -25,6 +25,7 @@ export function outcome(partial: Partial<StepOutcome> = {}): StepOutcome {
     apiCalls: [],
     wallMs: 5,
     navigationStatus: null,
+    unreachable: false,
     captured: {},
     pages: [],
     ...partial,

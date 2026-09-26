@@ -219,6 +219,22 @@ describe('runSession', () => {
     expect(second[0]!.id).toBe('login');
   });
 
+  it('an unreachable target fails the life as an infrastructure error, with no friction recorded', async () => {
+    const driver = new ScriptedDriver((uc) =>
+      uc.id === 'signup'
+        ? { ok: false, unreachable: true, error: 'net::ERR_CONNECTION_REFUSED' }
+        : {},
+    );
+    const { deps, events } = journeyDeps(driver);
+    const l = life(calm);
+    await expect(runSession(l, sim, deps)).rejects.toThrow(
+      'TARGET_UNREACHABLE: signup: net::ERR_CONNECTION_REFUSED',
+    );
+    expect(events.some((e) => e.useCaseId === 'signup')).toBe(false);
+    expect(l.memory.errorsMet).toEqual([]);
+    expect(driver.closed).toBe(1);
+  });
+
   it('computes needed paid features from goals', () => {
     expect(neededFeatures(persona('project-manager'), catalogue)).toEqual(['advancedAnalytics']);
     expect(neededFeatures(persona('retired-volunteer'), catalogue)).toEqual([]);

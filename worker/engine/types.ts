@@ -31,6 +31,11 @@ export interface StepOutcome {
   wallMs: number;
   /** HTTP status of the last page load of the step (browser only; null otherwise). */
   navigationStatus: number | null;
+  /**
+   * The target never answered (navigation timeout, connection refused, DNS): an infrastructure
+   * error, not something the persona experienced of the product.
+   */
+  unreachable: boolean;
   /** Context variables captured by the step (ids…), merged into persona memory. */
   captured: Record<string, string>;
   /** Pages (paths) visited during the step. */

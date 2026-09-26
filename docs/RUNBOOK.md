@@ -32,6 +32,11 @@ npm run brand               # after editing brand/*.svg
 
 ## Operate
 
+- **`TARGET_NOT_READY` / `TARGET_UNREACHABLE`**: the target (web app or API) did not answer — often
+  Orqea's CRA dev frontend still compiling after `docker compose up`. Browser runs wait up to
+  `FIGURA_READY_TIMEOUT_MS` (worker, default 120000) before the first step; raise it for a slow first
+  build, or wait for the frontend healthcheck and queue again. Neither counts as persona friction.
+
 - **Refused run**: read the code + sentence on the run page (ORQEA_CONTRACT.md §4).
 - **`CATALOGUE_DRIFT`**: the target changed an endpoint; update `catalogue/use-cases/*.json` and bump `catalogue/VERSION`.
 - **`CLEANUP_INCOMPLETE` / `CLEANUP_FAILED`**: call `POST /api/admin/synthetic/cleanup {runId}` on the

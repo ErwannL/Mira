@@ -45,6 +45,8 @@ export function workerConfigFromEnv(env: Env): {
       cancelPollMs: 1000,
       rowsPerAccount: 50,
       targets: parseTargets(env.FIGURA_TARGETS),
+      readyTimeoutMs: Number(env.FIGURA_READY_TIMEOUT_MS ?? 120_000),
+      readyPollMs: 2000,
     },
     databaseUrl,
     pollMs: Number(env.FIGURA_POLL_MS ?? 2000),
