@@ -72,17 +72,20 @@ export async function createSession(
   idHash: string,
   operator: string,
   expiresAt: Date,
+  target: string | null = null,
 ): Promise<void> {
-  await db.query('insert into sessions (id_hash, operator, expires_at) values ($1, $2, $3)', [
-    idHash,
-    operator,
-    expiresAt,
-  ]);
+  await db.query(
+    'insert into sessions (id_hash, operator, expires_at, target) values ($1, $2, $3, $4)',
+    [idHash, operator, expiresAt, target],
+  );
 }
 
-export async function findSession(db: Db, idHash: string): Promise<{ operator: string } | null> {
-  const { rows } = await db.query<{ operator: string }>(
-    'select operator from sessions where id_hash = $1 and expires_at > now()',
+export async function findSession(
+  db: Db,
+  idHash: string,
+): Promise<{ operator: string; target: string | null } | null> {
+  const { rows } = await db.query<{ operator: string; target: string | null }>(
+    'select operator, target from sessions where id_hash = $1 and expires_at > now()',
     [idHash],
   );
   return rows[0] ?? null;

@@ -17,6 +17,10 @@ describe('fake admin console', () => {
       payload: Record<string, unknown>;
     };
     expect(verified.payload).toMatchObject({ iss: 'orqea-admin-console', aud: 'figura' });
+    expect(verified.payload.target).toBeUndefined();
+    const withTarget = await makeFake({ consoleTarget: 'local' });
+    const t2 = (await withTarget.call('GET', '/console/token')).json.token as string;
+    expect(verifyJwtSignature(t2, SSO)).toMatchObject({ payload: { target: 'local' } });
     const open = await f.call('GET', '/console/open');
     expect(open.status).toBe(302);
     expect(open.headers.location).toMatch(/^http:\/\/localhost:4000\/#sso=/);

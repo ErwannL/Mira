@@ -19,8 +19,9 @@
         "role": "textbox",
         "name": {
           "en": "Email",
-          "fr": "Adresse e-mail"
-        }
+          "fr": "Email"
+        },
+        "exact": true
       },
       "value": "{{email}}"
     },
@@ -40,19 +41,21 @@
       "target": {
         "role": "button",
         "name": {
-          "en": "Log in",
+          "en": "Sign in",
           "fr": "Se connecter"
-        }
+        },
+        "exact": true
       }
     },
     {
       "action": "expect",
       "target": {
-        "role": "searchbox",
+        "role": "button",
         "name": {
           "en": "Search",
           "fr": "Rechercher"
-        }
+        },
+        "exact": true
       }
     }
   ],
@@ -73,11 +76,12 @@
   ],
   "success": {
     "ui": {
-      "role": "searchbox",
+      "role": "button",
       "name": {
         "en": "Search",
         "fr": "Rechercher"
-      }
+      },
+      "exact": true
     },
     "apiStatus": 200
   },

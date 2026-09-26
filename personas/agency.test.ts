@@ -28,6 +28,6 @@ describe(`persona ${id}`, () => {
   });
 
   it('pays for seats-heavy features within its budget', () => {
-    expect(money(id, 'bulk')).toBe('convert');
+    expect(money(id, 'advancedAnalytics')).toBe('convert');
   });
 });

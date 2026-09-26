@@ -11,58 +11,38 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/settings"
-    },
-    {
-      "action": "select",
-      "target": {
-        "role": "combobox",
-        "name": {
-          "en": "Theme",
-          "fr": "Thème"
-        }
-      },
-      "value": "dark"
+      "path": "/settings?tab=preferences"
     },
     {
       "action": "click",
       "target": {
         "role": "button",
         "name": {
-          "en": "Save settings",
-          "fr": "Enregistrer les préférences"
+          "en": "Select the dark theme",
+          "fr": "sélectionner le thème sombre"
         }
       }
     },
     {
-      "action": "expect",
-      "target": {
-        "role": "status",
-        "name": {
-          "en": "Settings saved",
-          "fr": "Préférences enregistrées"
-        }
+      "action": "expectText",
+      "text": {
+        "en": "Theme saved!",
+        "fr": "Thème enregistré !"
       }
     }
   ],
   "api": [
     {
       "method": "PATCH",
-      "path": "/api/me/settings",
+      "path": "/api/user/me/preferences",
       "body": {
         "theme": "dark"
       },
-      "auth": true
+      "auth": true,
+      "expectStatus": [200]
     }
   ],
   "success": {
-    "ui": {
-      "role": "status",
-      "name": {
-        "en": "Settings saved",
-        "fr": "Préférences enregistrées"
-      }
-    },
     "apiStatus": 200
   },
   "frictionHints": {

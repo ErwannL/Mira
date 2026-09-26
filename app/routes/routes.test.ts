@@ -55,6 +55,49 @@ describe('runs API', () => {
   });
 });
 
+describe('runs on a named Orqea target (FIGURA_TARGETS)', () => {
+  it('fills the URLs from the server config; unknown or web-less targets are refused', async () => {
+    h = await makeApp({
+      targets: {
+        local: {
+          api: 'http://backend:5001',
+          web: 'http://frontend:3001',
+          rewrite: { 'http://localhost:3001': 'http://frontend:3001' },
+        },
+        recette: { api: 'http://host.docker.internal:5102', rewrite: {} },
+      },
+    });
+    const c = await h.login('Ops', 'local');
+    const created = await h.api('POST', '/api/runs', c, {
+      config: { kind: 'journey', target: 'local', targetUrl: 'http://evil.example' },
+    });
+    expect(created.status).toBe(201);
+    expect((created.json.run as { config: object }).config).toMatchObject({
+      target: 'local',
+      targetUrl: 'http://backend:5001',
+      webUrl: 'http://frontend:3001',
+    });
+    const unknown = await h.api('POST', '/api/runs', c, {
+      config: { kind: 'journey', target: 'qa' },
+    });
+    expect(unknown.json).toEqual({
+      error: 'TARGET_NOT_CONFIGURED',
+      issues: ['target: "qa" is not configured in FIGURA_TARGETS'],
+    });
+    const noWeb = await h.api('POST', '/api/runs', c, {
+      config: { kind: 'journey', target: 'recette' },
+    });
+    expect(noWeb.json.error).toBe('TARGET_NOT_CONFIGURED');
+    const volume = await h.api('POST', '/api/runs', c, {
+      config: { kind: 'volume', target: 'recette' },
+    });
+    expect((volume.json.run as { config: object }).config).toMatchObject({
+      targetUrl: 'http://host.docker.internal:5102',
+      webUrl: null,
+    });
+  });
+});
+
 describe('reports API', () => {
   async function withFunnel(id: string, h2: NonNullable<typeof h>, c: string) {
     const r = await h2.api('POST', '/api/runs', c, { config: cfg });

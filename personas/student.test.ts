@@ -28,7 +28,7 @@ describe(`persona ${id}`, () => {
   });
 
   it('churns or defers rather than paying for a paid feature', () => {
-    expect(money(id, 'bulk')).not.toBe('convert');
+    expect(money(id, 'advancedAnalytics')).not.toBe('convert');
   });
 
   it('shrugs off a cookie banner on mobile', () => {

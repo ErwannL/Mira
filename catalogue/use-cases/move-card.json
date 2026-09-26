@@ -11,44 +11,42 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/boards"
+      "path": "/dashboard"
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{boardName}}",
           "fr": "{{boardName}}"
-        },
-        "exact": true
+        }
       }
     },
     {
       "action": "drag",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{cardTitle}}",
           "fr": "{{cardTitle}}"
-        },
-        "exact": true
+        }
       },
       "to": {
-        "role": "region",
+        "role": "heading",
         "name": {
-          "en": "Done",
-          "fr": "Terminé"
+          "en": "done",
+          "fr": "terminé"
         }
       }
     },
     {
       "action": "expect",
       "target": {
-        "role": "status",
+        "role": "button",
         "name": {
-          "en": "Card moved",
-          "fr": "Carte déplacée"
+          "en": "{{cardTitle}}",
+          "fr": "{{cardTitle}}"
         }
       }
     }
@@ -56,27 +54,29 @@
   "api": [
     {
       "method": "GET",
-      "path": "/api/boards/{{boardId}}",
+      "path": "/api/lists?board_id={{boardId}}",
       "auth": true,
       "save": {
+        "listId": "lists.0.id",
         "doneListId": "lists.2.id"
       }
     },
     {
-      "method": "PATCH",
+      "method": "PUT",
       "path": "/api/cards/{{cardId}}",
       "body": {
-        "listId": "{{doneListId}}"
+        "list_id": "{{doneListId}}"
       },
-      "auth": true
+      "auth": true,
+      "expectStatus": [200]
     }
   ],
   "success": {
     "ui": {
-      "role": "status",
+      "role": "button",
       "name": {
-        "en": "Card moved",
-        "fr": "Carte déplacée"
+        "en": "{{cardTitle}}",
+        "fr": "{{cardTitle}}"
       }
     },
     "apiStatus": 200

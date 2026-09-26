@@ -11,74 +11,123 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/forms"
-    },
-    {
-      "action": "fill",
-      "target": {
-        "role": "textbox",
-        "name": {
-          "en": "Form title",
-          "fr": "Titre du formulaire"
-        }
-      },
-      "value": "Registration"
-    },
-    {
-      "action": "fill",
-      "target": {
-        "role": "textbox",
-        "name": {
-          "en": "Question",
-          "fr": "Question"
-        }
-      },
-      "value": "Your name?"
+      "path": "/dashboard"
     },
     {
       "action": "click",
       "target": {
         "role": "button",
         "name": {
-          "en": "Create form",
-          "fr": "Créer le formulaire"
+          "en": "{{boardName}}",
+          "fr": "{{boardName}}"
         }
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Forms",
+          "fr": "Formulaires"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "+ Create New Form",
+          "fr": "+ Créer un nouveau formulaire"
+        }
+      }
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Title",
+          "fr": "Titre"
+        },
+        "exact": true
+      },
+      "value": "Registration"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Save",
+          "fr": "Enregistrer"
+        },
+        "exact": true
       }
     },
     {
       "action": "expect",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
-          "en": "Public link",
-          "fr": "Lien public"
+          "en": "Copy public link",
+          "fr": "Copier le lien public"
         }
       }
     }
   ],
   "api": [
     {
+      "method": "GET",
+      "path": "/api/lists?board_id={{boardId}}",
+      "auth": true,
+      "save": {
+        "listId": "lists.0.id",
+        "doneListId": "lists.2.id"
+      }
+    },
+    {
       "method": "POST",
-      "path": "/api/forms",
+      "path": "/api/boards/{{boardId}}/labels",
       "body": {
-        "title": "Registration",
-        "questions": ["Your name?"]
+        "title": "Form",
+        "color": "#2563eb"
       },
       "auth": true,
       "save": {
-        "formId": "id"
+        "labelId": "label.id"
+      },
+      "expectStatus": [201]
+    },
+    {
+      "method": "POST",
+      "path": "/api/boards/{{boardId}}/forms",
+      "body": {
+        "title": "Registration",
+        "config": {
+          "target_list_id": "{{listId}}",
+          "label_ids": ["{{labelId}}"],
+          "fields": [
+            {
+              "id": "name",
+              "type": "text",
+              "label": "Your name?",
+              "required": true
+            }
+          ],
+          "title_field": "name"
+        }
+      },
+      "auth": true,
+      "save": {
+        "formToken": "form.public_token"
       },
       "expectStatus": [201]
     }
   ],
   "success": {
-    "ui": {
-      "role": "link",
-      "name": {
-        "en": "Public link",
-        "fr": "Lien public"
-      }
-    },
     "apiStatus": 201
   },
   "frictionHints": {

@@ -18,8 +18,8 @@
       "target": {
         "role": "heading",
         "name": {
-          "en": "Plans",
-          "fr": "Offres"
+          "en": "Billing & plans",
+          "fr": "Facturation et offres"
         }
       }
     }
@@ -35,11 +35,10 @@
     "ui": {
       "role": "heading",
       "name": {
-        "en": "Plans",
-        "fr": "Offres"
+        "en": "Billing & plans",
+        "fr": "Facturation et offres"
       }
-    },
-    "apiStatus": 200
+    }
   },
   "frictionHints": {
     "fields": 0,

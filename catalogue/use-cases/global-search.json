@@ -11,32 +11,38 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/boards"
+      "path": "/dashboard"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Search",
+          "fr": "Rechercher"
+        },
+        "exact": true
+      }
     },
     {
       "action": "fill",
       "target": {
-        "role": "searchbox",
+        "role": "textbox",
         "name": {
-          "en": "Search",
-          "fr": "Rechercher"
+          "en": "Search a card across all your boards",
+          "fr": "Rechercher une carte dans tous vos boards"
         }
       },
       "value": "{{cardTitle}}"
     },
     {
-      "action": "press",
-      "key": "Enter"
-    },
-    {
       "action": "expect",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{cardTitle}}",
           "fr": "{{cardTitle}}"
-        },
-        "exact": true
+        }
       }
     }
   ],
@@ -44,17 +50,17 @@
     {
       "method": "GET",
       "path": "/api/search?q={{cardTitle}}",
-      "auth": true
+      "auth": true,
+      "expectStatus": [200]
     }
   ],
   "success": {
     "ui": {
-      "role": "link",
+      "role": "button",
       "name": {
         "en": "{{cardTitle}}",
         "fr": "{{cardTitle}}"
-      },
-      "exact": true
+      }
     },
     "apiStatus": 200
   },

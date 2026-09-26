@@ -14,6 +14,11 @@ describe('worker start', () => {
     const c = workerConfigFromEnv(env);
     expect(c.cfg.caps).toEqual({ accounts: 500, requestsPerSecond: 20, rows: 100000 });
     expect(c.cfg.localHosts).toEqual([]);
+    expect(c.cfg.targets).toEqual({});
+    expect(
+      workerConfigFromEnv({ ...env, FIGURA_TARGETS: '{"local":{"api":"http://backend:5001"}}' }).cfg
+        .targets,
+    ).toEqual({ local: { api: 'http://backend:5001', rewrite: {} } });
     expect(c.chromium).toBeUndefined();
     const o = workerConfigFromEnv({
       ...env,

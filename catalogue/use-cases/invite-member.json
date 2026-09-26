@@ -11,27 +11,27 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/boards"
+      "path": "/dashboard"
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{boardName}}",
           "fr": "{{boardName}}"
-        },
-        "exact": true
+        }
       }
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
-          "en": "Members",
-          "fr": "Membres"
-        }
+          "en": "Collaborators",
+          "fr": "Collaborateurs"
+        },
+        "exact": true
       }
     },
     {
@@ -39,8 +39,8 @@
       "target": {
         "role": "textbox",
         "name": {
-          "en": "Email of the person to invite",
-          "fr": "E-mail de la personne à inviter"
+          "en": "Invite a collaborator",
+          "fr": "Inviter un collaborateur"
         }
       },
       "value": "{{inviteEmail}}"
@@ -50,19 +50,17 @@
       "target": {
         "role": "button",
         "name": {
-          "en": "Send invitation",
-          "fr": "Envoyer l'invitation"
-        }
+          "en": "Invite",
+          "fr": "Inviter"
+        },
+        "exact": true
       }
     },
     {
-      "action": "expect",
-      "target": {
-        "role": "status",
-        "name": {
-          "en": "Invitation sent",
-          "fr": "Invitation envoyée"
-        }
+      "action": "expectText",
+      "text": {
+        "en": "Invitation created",
+        "fr": "Invitation créée"
       }
     }
   ],
@@ -78,13 +76,6 @@
     }
   ],
   "success": {
-    "ui": {
-      "role": "status",
-      "name": {
-        "en": "Invitation sent",
-        "fr": "Invitation envoyée"
-      }
-    },
     "apiStatus": 201
   },
   "frictionHints": {

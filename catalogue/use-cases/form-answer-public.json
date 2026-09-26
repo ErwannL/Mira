@@ -11,25 +11,15 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/forms"
-    },
-    {
-      "action": "click",
-      "target": {
-        "role": "link",
-        "name": {
-          "en": "Public link",
-          "fr": "Lien public"
-        }
-      }
+      "path": "/forms/{{formToken}}"
     },
     {
       "action": "fill",
       "target": {
         "role": "textbox",
         "name": {
-          "en": "Your answer",
-          "fr": "Votre réponse"
+          "en": "Your name?",
+          "fr": "Your name?"
         }
       },
       "value": "Dominique"
@@ -39,41 +29,33 @@
       "target": {
         "role": "button",
         "name": {
-          "en": "Send",
-          "fr": "Envoyer"
+          "en": "Send my request",
+          "fr": "Envoyer ma demande"
         }
       }
     },
     {
-      "action": "expect",
-      "target": {
-        "role": "status",
-        "name": {
-          "en": "Answer sent",
-          "fr": "Réponse envoyée"
-        }
+      "action": "expectText",
+      "text": {
+        "en": "Thank you",
+        "fr": "Merci"
       }
     }
   ],
   "api": [
     {
       "method": "POST",
-      "path": "/api/public/forms/{{formId}}/answers",
+      "path": "/api/forms/{{formToken}}/submit",
       "body": {
-        "answers": ["Dominique"]
+        "values": {
+          "name": "Dominique"
+        }
       },
       "auth": false,
       "expectStatus": [201]
     }
   ],
   "success": {
-    "ui": {
-      "role": "status",
-      "name": {
-        "en": "Answer sent",
-        "fr": "Réponse envoyée"
-      }
-    },
     "apiStatus": 201
   },
   "frictionHints": {

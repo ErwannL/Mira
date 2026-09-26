@@ -16,7 +16,13 @@ export function consolePages(app: FastifyInstance, deps: Deps): void {
     }
   };
   const token = () =>
-    mintSsoToken(config.ssoSecret, config.appId, 'Fake console operator', config.nowS());
+    mintSsoToken(
+      config.ssoSecret,
+      config.appId,
+      'Fake console operator',
+      config.nowS(),
+      config.consoleTarget ?? undefined,
+    );
   const appLink = () => `${config.appUrl}/#sso=${token()}`;
 
   app.get('/console/token', { preHandler: localOnly }, async () => ({

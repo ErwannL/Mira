@@ -14,22 +14,12 @@
       "path": "/calendar"
     },
     {
-      "action": "click",
-      "target": {
-        "role": "button",
-        "name": {
-          "en": "Next month",
-          "fr": "Mois suivant"
-        }
-      }
-    },
-    {
       "action": "expect",
       "target": {
         "role": "heading",
         "name": {
-          "en": "Calendar",
-          "fr": "Calendrier"
+          "en": "My calendar",
+          "fr": "Mon calendrier"
         }
       }
     }
@@ -37,16 +27,17 @@
   "api": [
     {
       "method": "GET",
-      "path": "/api/calendar",
-      "auth": true
+      "path": "/api/calendar/user",
+      "auth": true,
+      "expectStatus": [200]
     }
   ],
   "success": {
     "ui": {
       "role": "heading",
       "name": {
-        "en": "Calendar",
-        "fr": "Calendrier"
+        "en": "My calendar",
+        "fr": "Mon calendrier"
       }
     },
     "apiStatus": 200

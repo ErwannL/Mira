@@ -37,6 +37,6 @@ describe(`persona ${id}`, () => {
   });
 
   it('never pays (budget 0)', () => {
-    expect(money(id, 'qr')).not.toBe('convert');
+    expect(money(id, 'qrCodes')).not.toBe('convert');
   });
 });

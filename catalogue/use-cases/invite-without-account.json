@@ -11,26 +11,15 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/boards"
+      "path": "/dashboard"
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{boardName}}",
           "fr": "{{boardName}}"
-        },
-        "exact": true
-      }
-    },
-    {
-      "action": "click",
-      "target": {
-        "role": "link",
-        "name": {
-          "en": "Members",
-          "fr": "Membres"
         }
       }
     },
@@ -39,39 +28,54 @@
       "target": {
         "role": "button",
         "name": {
-          "en": "Create a guest link",
-          "fr": "Créer un lien invité"
-        }
+          "en": "Collaborators",
+          "fr": "Collaborateurs"
+        },
+        "exact": true
       }
     },
     {
-      "action": "expect",
+      "action": "fill",
       "target": {
-        "role": "status",
+        "role": "textbox",
         "name": {
-          "en": "Guest link created",
-          "fr": "Lien invité créé"
+          "en": "Invite a collaborator",
+          "fr": "Inviter un collaborateur"
         }
+      },
+      "value": "{{strangerEmail}}"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Invite",
+          "fr": "Inviter"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "expectText",
+      "text": {
+        "en": "Invitation created",
+        "fr": "Invitation créée"
       }
     }
   ],
   "api": [
     {
       "method": "POST",
-      "path": "/api/boards/{{boardId}}/guest-links",
-      "body": {},
+      "path": "/api/boards/{{boardId}}/members",
+      "body": {
+        "email": "{{strangerEmail}}"
+      },
       "auth": true,
       "expectStatus": [201]
     }
   ],
   "success": {
-    "ui": {
-      "role": "status",
-      "name": {
-        "en": "Guest link created",
-        "fr": "Lien invité créé"
-      }
-    },
     "apiStatus": 201
   },
   "frictionHints": {

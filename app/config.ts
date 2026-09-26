@@ -1,3 +1,5 @@
+import { parseTargets, type Targets } from '../shared/targets.js';
+
 type Env = Record<string, string | undefined>;
 
 export interface AppConfig {
@@ -14,6 +16,8 @@ export interface AppConfig {
   screenshotsDir: string;
   uiDir: string;
   maxRunsListed: number;
+  /** Named Orqea targets (FIGURA_TARGETS). */
+  targets: Targets;
 }
 
 function secret(env: Env, key: string): string {
@@ -29,6 +33,7 @@ export function appConfigFromEnv(env: Env, defaults: { uiDir: string }): AppConf
     throw new Error('FIGURA_SSO_SECRET must differ from FIGURA_SESSION_SECRET');
   const databaseUrl = env.FIGURA_DATABASE_URL ?? '';
   if (!databaseUrl) throw new Error('FIGURA_DATABASE_URL must be set');
+  // Orqea's admin console runs on :3002; the fake console on :4100.
   const origins = (env.FIGURA_CONSOLE_ORIGINS ?? 'http://localhost:4100')
     .split(',')
     .map((s) => s.trim())
@@ -51,5 +56,6 @@ export function appConfigFromEnv(env: Env, defaults: { uiDir: string }): AppConf
     screenshotsDir: env.FIGURA_SCREENSHOTS_DIR ?? 'data/screenshots',
     uiDir: env.FIGURA_UI_DIR ?? defaults.uiDir,
     maxRunsListed: 200,
+    targets: parseTargets(env.FIGURA_TARGETS),
   };
 }

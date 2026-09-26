@@ -10,6 +10,7 @@
     "create-board",
     "create-list",
     "create-card",
+    "stats",
     "bulk-actions",
     "invite-member",
     "billing-view-plans",

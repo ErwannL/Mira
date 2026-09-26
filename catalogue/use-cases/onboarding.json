@@ -11,45 +11,15 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/onboarding"
+      "path": "/dashboard"
     },
     {
       "action": "click",
       "target": {
         "role": "button",
         "name": {
-          "en": "Next",
-          "fr": "Suivant"
-        }
-      }
-    },
-    {
-      "action": "click",
-      "target": {
-        "role": "button",
-        "name": {
-          "en": "Next",
-          "fr": "Suivant"
-        }
-      }
-    },
-    {
-      "action": "click",
-      "target": {
-        "role": "button",
-        "name": {
-          "en": "Finish",
-          "fr": "Terminer"
-        }
-      }
-    },
-    {
-      "action": "expect",
-      "target": {
-        "role": "heading",
-        "name": {
-          "en": "Your boards",
-          "fr": "Vos tableaux"
+          "en": "Hide getting started",
+          "fr": "Masquer le démarrage"
         }
       }
     }
@@ -57,19 +27,13 @@
   "api": [
     {
       "method": "POST",
-      "path": "/api/onboarding/complete",
+      "path": "/api/onboarding/checklist/dismiss",
       "body": {},
-      "auth": true
+      "auth": true,
+      "expectStatus": [200]
     }
   ],
   "success": {
-    "ui": {
-      "role": "heading",
-      "name": {
-        "en": "Your boards",
-        "fr": "Vos tableaux"
-      }
-    },
     "apiStatus": 200
   },
   "frictionHints": {

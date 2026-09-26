@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TARGET_NAME } from './targets.js';
 
 export const RUN_STATUSES = [
   'draft',
@@ -33,7 +34,12 @@ export const runConfigSchema = z
   .object({
     kind: z.enum(['journey', 'volume']),
     label: z.string().max(120).default(''),
+    /** Named target (FIGURA_TARGETS); when set, the server fills targetUrl/webUrl from it. */
+    target: z.string().regex(TARGET_NAME).nullable().default(null),
+    /** Orqea's API base URL. */
     targetUrl: z.string().url(),
+    /** Orqea's web app base URL when it is not served by the API origin (real Orqea). */
+    webUrl: z.string().url().nullable().default(null),
     allowRemote: z.boolean().default(false),
     confirmHost: z.string().max(253).nullable().default(null),
     personaIds: z.array(z.string()).default([]),

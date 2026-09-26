@@ -32,18 +32,19 @@ describe('OrqeaClient against the fake', () => {
       version: 'fake-test',
     });
     expect((await c.endpoints()).length).toBeGreaterThan(20);
-    expect((await c.plans()).map((p) => p.key)).toEqual(['free', 'pro', 'team']);
+    expect((await c.plans()).map((p) => p.key)).toEqual(['free', 'pro', 'team', 'enterprise']);
     await fake.call('POST', '/api/auth/register', {
       email: 'synth+r1-student@synthetic.invalid',
-      password: 'Str0ngPassword',
+      username: 'sr1_student',
+      password: 'Str0ngPassword1!',
       acceptedTerms: true,
     });
     expect(await c.requestVerifyUrl('synth+r1-student@synthetic.invalid')).toContain(
-      '/api/auth/verify-email?token=',
+      '/verify-email?token=',
     );
     await c.setScenario({ preset: 'unclear-signup' });
     expect(fake.deps.scenarios.get('r1').extraSignupFields).toBe(4);
-    expect(await c.cleanup()).toMatchObject({ residualRows: 0 });
+    expect(await c.cleanup()).toMatchObject({ before: { users: 1 }, residualRows: 0 });
     expect(c.runHeader()).toMatch(/^r1\.\d+\.[0-9a-f]{64}$/);
   });
   it('turns failures into ContractErrors naming the endpoint', async () => {
@@ -60,6 +61,11 @@ describe('OrqeaClient against the fake', () => {
       fetchImpl: (async () => new Response('[]', { status: 200 })) as typeof fetch,
     });
     await expect(weird.endpoints()).rejects.toThrow('unexpected payload');
+    const empty = client({
+      fetchImpl: (async () =>
+        new Response('{"message":"Orqea API","endpoints":{}}', { status: 200 })) as typeof fetch,
+    });
+    await expect(empty.endpoints()).rejects.toThrow('unexpected payload');
     const html = client({
       fetchImpl: (async () => new Response('<html>', { status: 200 })) as typeof fetch,
     });
@@ -80,9 +86,11 @@ const allEndpoints: Endpoint[] = REQUIRED_ENDPOINTS.map((r) => ({
 const stub = (i: Partial<TargetInfo> = {}, eps = allEndpoints) => ({
   targetInfo: async () => ({ ...info, ...i }),
   endpoints: async () => eps,
+  plans: async () => [],
 });
 const input = (o: Partial<GuardInput> = {}): GuardInput => ({
   targetUrl: 'http://localhost:4100',
+  otherUrls: [],
   allowRemote: false,
   confirmHost: null,
   localHosts: ['fake-orqea'],
@@ -153,15 +161,26 @@ describe('guardTarget', () => {
         throw new ContractError('GET /api/admin/synthetic/target', 404, 'x');
       },
       endpoints: async () => [],
+      plans: async () => [],
     };
     expect(await guardTarget(input(), noTarget)).toMatchObject({
       code: 'ORQEA_CONTRACT_MISSING:GET /api/admin/synthetic/target',
+    });
+    const badPlans = {
+      ...stub(),
+      plans: async () => {
+        throw new ContractError('GET /api/billing/plans', 200, 'unexpected payload');
+      },
+    };
+    expect(await guardTarget(input(), badPlans)).toMatchObject({
+      code: 'ORQEA_CONTRACT_MISSING:GET /api/billing/plans',
     });
     const boom = {
       targetInfo: async () => {
         throw new Error('bug');
       },
       endpoints: async () => [],
+      plans: async () => [],
     };
     await expect(guardTarget(input(), boom)).rejects.toThrow('bug');
   });
@@ -208,6 +227,28 @@ describe('guardTarget', () => {
       ),
     );
   });
+  it('recette (Orqea staging) is a non-production env; case does not matter', async () => {
+    for (const env of ['recette', 'Recette', 'development', 'staging'])
+      expect((await guardTarget(input(), stub({ env }))).ok, env).toBe(true);
+  });
+  it('every host the run reaches is checked: web app and rewrite destinations too', async () => {
+    const withWeb = (web: string, o: Partial<GuardInput> = {}) =>
+      guardTarget(input({ otherUrls: [web], ...o }), stub());
+    expect((await withWeb('http://frontend:3001', { localHosts: ['frontend'] })).ok).toBe(true);
+    expect(await withWeb('http://frontend:3001')).toMatchObject({
+      code: 'REMOTE_HOST_UNCONFIRMED',
+    });
+    expect(await withWeb('https://app.orqea.com')).toMatchObject({ code: 'PRODUCTION_ENV' });
+    const remote = {
+      targetUrl: 'https://api.recette.orqea.dev',
+      allowRemote: true,
+      confirmHost: 'api.recette.orqea.dev, web.recette.orqea.dev',
+    };
+    expect((await withWeb('https://web.recette.orqea.dev', remote)).ok).toBe(true);
+    expect(await withWeb('https://other.orqea.dev', remote)).toMatchObject({
+      code: 'REMOTE_HOST_UNCONFIRMED',
+    });
+  });
   it('the real fake passes the guard', async () => {
     expect((await guardTarget(input({ targetUrl: fake.baseUrl }), client())).ok).toBe(true);
   });
@@ -222,7 +263,11 @@ describe('drift', () => {
   it('the catalogue has no drift against the fake Orqea', async () => {
     const report = checkDrift(catalogue, await client().endpoints());
     expect(report.missing).toEqual([]);
-    expect(report.uncatalogued).toEqual(['GET /api/boards', 'GET /api/me']);
+    expect(report.uncatalogued).toEqual([
+      'GET /api/boards',
+      'GET /api/boards/:*',
+      'GET /api/user/me',
+    ]);
   });
   it('reports every catalogue step the target lacks', () => {
     const r = checkDrift(catalogue, [{ method: 'get', path: '/api/billing/plans' }]);

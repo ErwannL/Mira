@@ -21,6 +21,18 @@ export const uiStepSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('press'), key: z.string() }).strict(),
   z.object({ action: z.literal('openVerifyUrl') }).strict(),
   z.object({ action: z.literal('expect'), target: targetSchema }).strict(),
+  /**
+   * Visible text, optionally inside a role. For outcomes Orqea shows without an accessible name
+   * (a status paragraph, a toast): still no CSS selector. Each use is a friction fact in
+   * docs/ORQEA_UI_FACTS.md.
+   */
+  z
+    .object({
+      action: z.literal('expectText'),
+      text: accessibleNameSchema,
+      role: z.string().optional(),
+    })
+    .strict(),
 ]);
 
 export const apiStepSchema = z

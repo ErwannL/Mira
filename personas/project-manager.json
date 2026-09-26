@@ -11,6 +11,7 @@
     "create-board",
     "create-list",
     "create-card",
+    "stats",
     "card-priority",
     "move-card",
     "automation-rule",

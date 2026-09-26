@@ -11,28 +11,26 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/boards"
+      "path": "/dashboard"
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{boardName}}",
           "fr": "{{boardName}}"
-        },
-        "exact": true
+        }
       }
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{cardTitle}}",
           "fr": "{{cardTitle}}"
-        },
-        "exact": true
+        }
       }
     },
     {
@@ -44,7 +42,7 @@
           "fr": "Priorité"
         }
       },
-      "value": "high"
+      "value": "High"
     },
     {
       "action": "click",
@@ -52,37 +50,52 @@
         "role": "button",
         "name": {
           "en": "Save",
-          "fr": "Enregistrer"
-        }
+          "fr": "Sauvegarder"
+        },
+        "exact": true
       }
     },
     {
       "action": "expect",
       "target": {
-        "role": "status",
+        "role": "button",
         "name": {
-          "en": "Saved",
-          "fr": "Enregistré"
+          "en": "{{cardTitle}}",
+          "fr": "{{cardTitle}}"
         }
       }
     }
   ],
   "api": [
     {
+      "method": "POST",
+      "path": "/api/boards/{{boardId}}/priorities",
+      "body": {
+        "title": "High",
+        "color": "#dc2626"
+      },
+      "auth": true,
+      "save": {
+        "priorityId": "priority.id"
+      },
+      "expectStatus": [201]
+    },
+    {
       "method": "PATCH",
       "path": "/api/cards/{{cardId}}",
       "body": {
-        "priority": "high"
+        "priority_id": "{{priorityId}}"
       },
-      "auth": true
+      "auth": true,
+      "expectStatus": [200]
     }
   ],
   "success": {
     "ui": {
-      "role": "status",
+      "role": "button",
       "name": {
-        "en": "Saved",
-        "fr": "Enregistré"
+        "en": "{{cardTitle}}",
+        "fr": "{{cardTitle}}"
       }
     },
     "apiStatus": 200

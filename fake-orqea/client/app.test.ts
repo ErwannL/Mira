@@ -6,12 +6,12 @@ function setup(
   html: string,
   respond: (url: string, init: RequestInit) => { status: number; body?: unknown; bad?: boolean },
 ) {
-  const win = new Window({ url: 'http://fake.test/boards/b1' });
+  const win = new Window({ url: 'http://fake.test/board/1' });
   const doc = win.document as unknown as Document;
   doc.body.innerHTML = html;
   const assign = vi.fn();
   Object.defineProperty(win, 'location', {
-    value: { pathname: '/boards/b1', assign },
+    value: { pathname: '/board/1', assign },
     configurable: true,
   });
   const calls: { url: string; init: RequestInit }[] = [];
@@ -28,43 +28,47 @@ function setup(
     };
   }) as unknown as typeof fetch;
   installApp(doc, win as unknown as globalThis.Window, fetchImpl);
-  const submit = async (form: Element) => {
-    form.dispatchEvent(
-      new win.Event('submit', { bubbles: true, cancelable: true }) as unknown as Event,
+  const fire = (type: string, target: Element) =>
+    target.dispatchEvent(
+      new win.Event(type, { bubbles: true, cancelable: true }) as unknown as Event,
     );
+  const submit = async (form: Element) => {
+    fire('submit', form);
     await new Promise((r) => setTimeout(r, 0));
   };
-  return { win, doc, assign, calls, submit };
+  return { win, doc, assign, calls, submit, fire };
 }
 
 describe('fake orqea browser script', () => {
-  it('submits forms as JSON (checkbox, arrays, collected checkboxes) and redirects with the done flash', async () => {
+  it('submits forms as JSON (nested names, JSON fields, collected checkboxes) and redirects', async () => {
     const { doc, calls, assign, submit } = setup(
-      `<form data-api="POST /api/lists/{listId}/cards" data-list-id="l1" data-redirect="/cards/{id}" data-done="card">
+      `<form data-api="POST /api/lists/{listId}/cards" data-list-id="l1" data-redirect="/card/{card.id}" data-done="card">
         <input name="title" value="T"><input type="checkbox" name="acceptedTerms" checked>
-        <input name="questions" data-array value="Q"><input type="checkbox" name="cardIds" value="c1" data-collect checked>
+        <input name="values.name" value="Ann"><input name="values.age" value="3"><input type="checkbox" name="values.ok">
+        <input type="hidden" name="config" data-json value='{"a":[1]}'><input type="checkbox" name="cardIds" value="c1" data-collect checked>
         <input type="checkbox" name="cardIds" value="c2" data-collect><input value="nameless"></form>`,
-      () => ({ status: 201, body: { id: 'c9' } }),
+      () => ({ status: 201, body: { card: { id: 9 } } }),
     );
     await submit(doc.querySelector('form')!);
     expect(calls[0]!.url).toBe('/api/lists/l1/cards');
     expect(JSON.parse(calls[0]!.init.body as string)).toEqual({
       title: 'T',
       acceptedTerms: true,
-      questions: ['Q'],
+      values: { name: 'Ann', age: '3', ok: false },
+      config: { a: [1] },
       cardIds: ['c1'],
     });
-    expect(assign).toHaveBeenCalledWith('/cards/c9?done=card');
+    expect(assign).toHaveBeenCalledWith('/card/9?done=card');
   });
 
-  it('GET forms send no body; redirects keep existing query strings; missing placeholders become empty', async () => {
+  it('GET forms send no body; redirects keep query strings; missing placeholders become empty', async () => {
     const { doc, calls, assign, submit } = setup(
-      `<form data-api="GET /api/export" data-redirect="/qr?id={id}" data-done="export"></form>`,
+      `<form data-api="GET /api/export" data-redirect="/qr?id={id}&b={board.id}" data-done="export"></form>`,
       () => ({ status: 200, bad: true }),
     );
     await submit(doc.querySelector('form')!);
     expect(calls[0]!.init.body).toBeUndefined();
-    expect(assign).toHaveBeenCalledWith('/qr?id=&done=export');
+    expect(assign).toHaveBeenCalledWith('/qr?id=&b=&done=export');
   });
 
   it('stays on the page without redirect/done, and stores a login token', async () => {
@@ -74,36 +78,59 @@ describe('fake orqea browser script', () => {
     }));
     await submit(doc.querySelector('form')!);
     expect(doc.cookie).toContain('orqea_token=tok');
-    expect(assign).toHaveBeenCalledWith('/boards/b1');
+    expect(assign).toHaveBeenCalledWith('/board/1');
   });
 
-  it('shows the server explanation in a role=alert, reusing it on retries', async () => {
+  it('shows the server explanation (message, else code) in a role=alert, reusing it', async () => {
     let n = 0;
+    const bodies = [
+      { message: 'Invalid email', issues: ['Email must contain an @ symbol'] },
+      { code: 'INVALID_LABEL' },
+      {},
+    ];
     const { doc, submit } = setup(`<form data-api="POST /x"></form>`, () => ({
       status: 400,
-      body: n++ ? {} : { message: 'Enter an email' },
+      body: bodies[n++],
     }));
     const form = doc.querySelector('form')!;
     await submit(form);
-    expect(form.querySelector('[role="alert"]')!.textContent).toBe('Enter an email');
+    expect(form.querySelector('[role="alert"]')!.textContent).toBe(
+      'Invalid email Email must contain an @ symbol',
+    );
+    await submit(form);
+    expect(form.querySelector('[role="alert"]')!.textContent).toBe('INVALID_LABEL');
     await submit(form);
     expect(form.querySelectorAll('[role="alert"]')).toHaveLength(1);
     expect(form.querySelector('[role="alert"]')!.textContent).toBe('Error.');
   });
 
+  it('refuses an unticked required checkbox before any request, like Orqea signup', async () => {
+    const { doc, calls, submit } = setup(
+      `<form data-api="POST /api/auth/register"><input type="checkbox" name="acceptedTerms" required data-invalid="Please accept"></form>`,
+      () => ({ status: 201 }),
+    );
+    const form = doc.querySelector('form')!;
+    await submit(form);
+    expect(calls).toHaveLength(0);
+    expect(form.querySelector('[role="alert"]')!.textContent).toBe('Please accept');
+    (form.querySelector('input') as HTMLInputElement).checked = true;
+    await submit(form);
+    expect(calls).toHaveLength(1);
+  });
+
   it('opens the paywall dialog on 402 with the feature or limit', async () => {
-    let body: object = { feature: 'qr' };
+    let body: object = { feature: 'qrCodes' };
     const { doc, submit } = setup(
-      `<form data-api="POST /api/qr"></form><div id="paywall" hidden><span data-feature></span><button data-action="close-paywall">x</button></div>`,
+      `<form data-api="POST /api/qr-codes"></form><div id="paywall" hidden><span data-feature></span><button data-action="close-paywall">x</button></div>`,
       () => ({ status: 402, body }),
     );
     await submit(doc.querySelector('form')!);
     const dialog = doc.getElementById('paywall')!;
     expect(dialog.hidden).toBe(false);
-    expect(dialog.querySelector('[data-feature]')!.textContent).toBe('qr');
-    body = { limitKey: 'boards' };
+    expect(dialog.querySelector('[data-feature]')!.textContent).toBe('qrCodes');
+    body = { limitKey: 'maxBoards' };
     await submit(doc.querySelector('form')!);
-    expect(dialog.querySelector('[data-feature]')!.textContent).toBe('boards');
+    expect(dialog.querySelector('[data-feature]')!.textContent).toBe('maxBoards');
     body = {};
     await submit(doc.querySelector('form')!);
     expect(dialog.querySelector('[data-feature]')!.textContent).toBe('');
@@ -117,11 +144,12 @@ describe('fake orqea browser script', () => {
     expect(calls).toHaveLength(0);
   });
 
-  it('handles consent, select mode, onboarding steps and unrelated clicks', () => {
-    const { doc } = setup(
+  it('handles consent, select mode, panels, navigation buttons and unrelated clicks', () => {
+    const { doc, assign } = setup(
       `<div id="cookie-banner"><button data-action="consent" data-value="none">no</button></div>
        <button data-action="select-mode">sel</button><input data-bulk hidden>
-       <div data-step="0"><button data-action="next">n</button></div><div data-step="1" hidden></div><p id="plain">p</p>`,
+       <button data-action="toggle" data-target="panel">t</button><div id="panel" hidden></div>
+       <button data-action="go" data-href="/board/7">B</button><button data-action="nothing">?</button><p id="plain">p</p>`,
       () => ({ status: 200 }),
     );
     (doc.querySelector('[data-action="consent"]') as HTMLElement).click();
@@ -129,8 +157,14 @@ describe('fake orqea browser script', () => {
     expect(doc.cookie).toContain('consent=none');
     (doc.querySelector('[data-action="select-mode"]') as HTMLElement).click();
     expect((doc.querySelector('[data-bulk]') as HTMLElement).hidden).toBe(false);
-    (doc.querySelector('[data-action="next"]') as HTMLElement).click();
-    expect((doc.querySelector('[data-step="1"]') as HTMLElement).hidden).toBe(false);
+    const toggle = doc.querySelector('[data-action="toggle"]') as HTMLElement;
+    toggle.click();
+    expect(doc.getElementById('panel')!.hidden).toBe(false);
+    toggle.click();
+    expect(doc.getElementById('panel')!.hidden).toBe(true);
+    (doc.querySelector('[data-action="go"]') as HTMLElement).click();
+    expect(assign).toHaveBeenCalledWith('/board/7');
+    (doc.querySelector('[data-action="nothing"]') as HTMLElement).click();
     (doc.getElementById('plain') as HTMLElement).click();
   });
 
@@ -142,9 +176,46 @@ describe('fake orqea browser script', () => {
     expect(doc.cookie).toContain('consent=all');
   });
 
-  it('drag and drop moves a card to a list', async () => {
+  it('counts the selection in the page language (one / other), hidden at zero', () => {
+    const { doc, fire } = setup(
+      `<input type="checkbox" data-select><input type="checkbox" data-select><input id="other" type="checkbox">
+       <p data-selected-count data-one="{count} carte" data-other="{count} cartes" hidden></p>`,
+      () => ({ status: 200 }),
+    );
+    const [a, b] = Array.from(doc.querySelectorAll<HTMLInputElement>('input[data-select]'));
+    const out = doc.querySelector('[data-selected-count]') as HTMLElement;
+    a!.checked = true;
+    fire('change', a!);
+    expect([out.textContent, out.hidden]).toEqual(['1 carte', false]);
+    b!.checked = true;
+    fire('change', b!);
+    expect(out.textContent).toBe('2 cartes');
+    a!.checked = false;
+    b!.checked = false;
+    fire('change', a!);
+    expect(out.hidden).toBe(true);
+    fire('change', doc.getElementById('other')!);
+  });
+
+  it("live search renders buttons that open the card's board", async () => {
+    const { doc, calls, fire } = setup(
+      `<input data-search><input id="plain"><ul data-search-results></ul>`,
+      () => ({ status: 200, body: { cards: [{ title: '<b>Call</b>', board_id: 4 }] } }),
+    );
+    const input = doc.querySelector('[data-search]') as HTMLInputElement;
+    input.value = 'call me';
+    fire('input', input);
+    fire('input', doc.getElementById('plain')!);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(calls.map((c) => c.url)).toEqual(['/api/search?q=call%20me']);
+    const b = doc.querySelector('[data-search-results] button') as HTMLElement;
+    expect(b.textContent).toBe('<b>Call</b>');
+    expect(b.dataset.href).toBe('/board/4');
+  });
+
+  it('drag and drop moves a card to a list (PUT list_id)', async () => {
     const { win, doc, calls, assign } = setup(
-      `<a data-card-id="c1" draggable="true">card</a><section data-list-id="l3"><h2>Done</h2></section><p id="out">x</p>`,
+      `<a data-card-id="c1" draggable="true">card</a><section data-list-id="l3"><h2>done</h2></section><p id="out">x</p>`,
       () => ({ status: 200 }),
     );
     const store = new Map<string, string>();
@@ -152,28 +223,30 @@ describe('fake orqea browser script', () => {
       setData: (k: string, v: string) => store.set(k, v),
       getData: (k: string) => store.get(k) ?? '',
     };
-    const fire = (type: string, target: Element) => {
+    const drag = (type: string, target: Element) => {
       const ev = new win.Event(type, { bubbles: true, cancelable: true }) as unknown as DragEvent;
       Object.defineProperty(ev, 'dataTransfer', { value: dt });
       target.dispatchEvent(ev);
       return ev;
     };
     const zone = doc.querySelector('h2')!;
-    expect(fire('drop', zone).defaultPrevented).toBe(false); // nothing dragged yet
-    fire('dragstart', doc.getElementById('out')!);
-    fire('dragstart', doc.querySelector('[data-card-id]')!);
-    expect(fire('dragover', zone).defaultPrevented).toBe(true);
-    expect(fire('dragover', doc.getElementById('out')!).defaultPrevented).toBe(false);
-    fire('drop', doc.getElementById('out')!);
-    fire('drop', zone);
+    expect(drag('drop', zone).defaultPrevented).toBe(false); // nothing dragged yet
+    drag('dragstart', doc.getElementById('out')!);
+    drag('dragstart', doc.querySelector('[data-card-id]')!);
+    expect(drag('dragover', zone).defaultPrevented).toBe(true);
+    expect(drag('dragover', doc.getElementById('out')!).defaultPrevented).toBe(false);
+    drag('drop', doc.getElementById('out')!);
+    drag('drop', zone);
     await new Promise((r) => setTimeout(r, 0));
     expect(calls[0]!.url).toBe('/api/cards/c1');
-    expect(JSON.parse(calls[0]!.init.body as string)).toEqual({ listId: 'l3' });
-    expect(assign).toHaveBeenCalledWith('/boards/b1?done=moved');
+    expect(calls[0]!.init.method).toBe('PUT');
+    expect(JSON.parse(calls[0]!.init.body as string)).toEqual({ list_id: 'l3' });
+    expect(assign).toHaveBeenCalledWith('/board/1?done=moved');
   });
 
   it('serves itself as a self-invoking script', () => {
     expect(clientScript()).toContain('function submitForm(');
+    expect(clientScript()).toContain('function runSearch(');
     expect(clientScript()).toContain('installApp(document, window, window.fetch.bind(window));');
   });
 });

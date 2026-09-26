@@ -1,5 +1,5 @@
 import type { Persona } from '../../shared/persona-schema.js';
-import type { Plan } from '../../shared/plans.js';
+import { isBuyable, type BuyablePlan, type Plan } from '../../shared/plans.js';
 import { round } from './friction.js';
 
 export type MoneyDecision = 'convert' | 'defer' | 'churn';
@@ -22,7 +22,7 @@ export interface MoneyOutcome {
   rule: string;
 }
 
-export function costFor(plan: Plan, persona: Persona): number {
+export function costFor(plan: BuyablePlan, persona: Persona): number {
   return round(plan.perSeat ? plan.priceMonthly * persona.teamSize : plan.priceMonthly);
 }
 
@@ -32,17 +32,20 @@ export function decideMoney(
   persona: Persona,
 ): MoneyOutcome {
   const wanted = encounter.featureKey ? [encounter.featureKey] : encounter.neededFeatures;
-  const candidates = plans
-    .filter((p) => p.priceMonthly > 0 && wanted.some((f) => p.features.includes(f)))
+  const answering = plans.filter((p) => wanted.some((f) => p.features.includes(f)));
+  const candidates = answering
+    .filter(isBuyable)
     .sort((a, b) => costFor(a, persona) - costFor(b, persona));
   const plan = candidates[0];
   if (!plan) {
+    // A quote-based plan ("contact sales") is not something a persona buys on the spot.
+    const quoted = answering.some((p) => p.priceMonthly === null);
     return {
       decision: 'defer',
       planKey: null,
       monthlyCost: 0,
       perceivedValue: 0,
-      rule: 'no paid plan answers a need',
+      rule: quoted ? 'only a quote-based plan answers the need' : 'no paid plan answers a need',
     };
   }
   const need = wanted.some((f) => encounter.neededFeatures.includes(f)) ? 1 : 0.3;

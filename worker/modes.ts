@@ -3,7 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomPassword } from '../shared/crypto.js';
 import type { Persona } from '../shared/persona-schema.js';
-import type { RunConfig } from '../shared/run-config.js';
+import type { EffectiveTarget } from '../shared/targets.js';
 import { syntheticEmail } from '../shared/synthetic.js';
 import { ApiDriver } from './drivers/api-driver.js';
 import { BrowserDriver } from './drivers/browser-driver.js';
@@ -43,11 +43,22 @@ export function newCredentials(runId: string) {
   };
 }
 
+/**
+ * Orqea usernames: 3-30 of `[A-Za-z0-9_-]` (`routes/api/auth.js`). Without one, Orqea derives it
+ * from the email's local part, and `synth+…` is refused for its `+`. Not unique in Orqea.
+ */
+export function syntheticUsername(runId: string, personaId: string): string {
+  return `s${runId}_${personaId}`.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 30);
+}
+
 export function initialVars(runId: string) {
   return (p: Persona): Record<string, string> => ({
+    username: syntheticUsername(runId, p.id),
     boardName: p.locale === 'fr' ? `Tableau ${p.id}` : `Board ${p.id}`,
     cardTitle: p.locale === 'fr' ? 'Première tâche' : 'First task',
     inviteEmail: `synth+${runId}-guest@synthetic.invalid`,
+    // Someone with no Orqea account (the "invite without account" path).
+    strangerEmail: `synth+${runId}-stranger-${p.id}@synthetic.invalid`,
   });
 }
 
@@ -57,7 +68,7 @@ export interface DriverSetup {
 }
 
 export async function browserDrivers(
-  config: RunConfig,
+  target: EffectiveTarget,
   runId: string,
   data: SimData,
   opts: {
@@ -73,7 +84,9 @@ export async function browserDrivers(
   return {
     openDriver: (persona) =>
       BrowserDriver.open(browser, persona, {
-        baseUrl: config.targetUrl.replace(/\/$/, ''),
+        baseUrl: target.browserBase,
+        apiOrigin: new URL(target.api).origin,
+        rewrite: target.rewrite,
         runHeader: opts.runHeader,
         screenshotDir: dir,
         stepTimeoutMs: opts.stepTimeoutMs,
@@ -84,13 +97,13 @@ export async function browserDrivers(
 }
 
 export function apiDrivers(
-  config: RunConfig,
+  target: EffectiveTarget,
   opts: { runHeader: () => string; fetchImpl: typeof fetch; requestsPerSecond: number },
 ): DriverSetup {
   const limiter = new RateLimiter(opts.requestsPerSecond);
   const make = async (): Promise<Driver> =>
     new ApiDriver({
-      baseUrl: config.targetUrl.replace(/\/$/, ''),
+      baseUrl: target.api.replace(/\/$/, ''),
       runHeader: opts.runHeader,
       fetchImpl: opts.fetchImpl,
       now: Date.now,

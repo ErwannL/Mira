@@ -6,7 +6,7 @@
   },
   "area": "sharing",
   "requires": ["login"],
-  "planGate": "qr",
+  "planGate": "qrCodes",
   "minutes": 1,
   "ui": [
     {
@@ -18,8 +18,19 @@
       "target": {
         "role": "textbox",
         "name": {
-          "en": "Link to encode",
-          "fr": "Lien à encoder"
+          "en": "Code name",
+          "fr": "Nom du code"
+        }
+      },
+      "value": "Poster"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Destination",
+          "fr": "Destination"
         }
       },
       "value": "https://example.org"
@@ -29,41 +40,32 @@
       "target": {
         "role": "button",
         "name": {
-          "en": "Generate QR code",
-          "fr": "Générer le QR code"
+          "en": "Create the code",
+          "fr": "Créer le code"
         }
       }
     },
     {
-      "action": "expect",
-      "target": {
-        "role": "img",
-        "name": {
-          "en": "QR code",
-          "fr": "QR code"
-        }
+      "action": "expectText",
+      "text": {
+        "en": "Poster",
+        "fr": "Poster"
       }
     }
   ],
   "api": [
     {
       "method": "POST",
-      "path": "/api/qr",
+      "path": "/api/qr-codes",
       "body": {
-        "url": "https://example.org"
+        "label": "Poster",
+        "targetUrl": "https://example.org"
       },
       "auth": true,
       "expectStatus": [201]
     }
   ],
   "success": {
-    "ui": {
-      "role": "img",
-      "name": {
-        "en": "QR code",
-        "fr": "QR code"
-      }
-    },
     "apiStatus": 201
   },
   "frictionHints": {

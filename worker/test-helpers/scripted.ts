@@ -51,7 +51,7 @@ export const testPlans: Plan[] = [
     priceMonthly: 9,
     currency: 'EUR',
     perSeat: false,
-    features: ['automation', 'qr', 'bulk', 'export'],
+    features: ['aiAgents', 'integrations', 'advancedAnalytics', 'qrCodes'],
   },
 ];
 

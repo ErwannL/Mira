@@ -28,6 +28,6 @@ describe(`persona ${id}`, () => {
   });
 
   it('pays for QR codes she needs when she is satisfied', () => {
-    expect(money(id, 'qr')).toBe('convert');
+    expect(money(id, 'qrCodes')).toBe('convert');
   });
 });

@@ -22,7 +22,8 @@ const baseline: Scenario = {
   extraSignupFields: 0,
   unclearErrors: false,
   captcha: false,
-  lockedFeatures: ['automation', 'qr', 'bulk', 'export'],
+  // What Orqea's free plan locks among the catalogue's features (billing/plans.js).
+  lockedFeatures: ['qrCodes', 'advancedAnalytics'],
   boardLimit: 3,
   slowMs: 0,
   unnamedControls: false,

@@ -40,6 +40,11 @@ export const en = {
   'form.label': 'Label',
   'form.kind': 'Mode',
   'form.targetUrl': 'Target URL',
+  'form.target': 'Orqea to test',
+  'form.targetCustom': 'Custom URL (below)',
+  'form.testing': 'Testing Orqea “{target}”: the environment the admin console is inspecting.',
+  'form.targetNotConfigured':
+    'TARGET_NOT_CONFIGURED: the admin console inspects “{target}”, which is not configured in FIGURA_TARGETS on this Figura. Pick a configured target or a custom URL.',
   'form.allowRemote': 'Allow a remote target',
   'form.confirmHost': 'Retype the target host name to confirm',
   'form.personas': 'Personas',
@@ -178,6 +183,12 @@ export const fr: Record<I18nKey, string> = {
   'form.label': 'Libellé',
   'form.kind': 'Mode',
   'form.targetUrl': 'URL de la cible',
+  'form.target': 'Orqea à tester',
+  'form.targetCustom': 'URL personnalisée (ci-dessous)',
+  'form.testing':
+    'Orqea testé : « {target} », l’environnement que la console d’administration inspecte.',
+  'form.targetNotConfigured':
+    'TARGET_NOT_CONFIGURED : la console d’administration inspecte « {target} », qui n’est pas configuré dans FIGURA_TARGETS sur ce Figura. Choisissez une cible configurée ou une URL personnalisée.',
   'form.allowRemote': 'Autoriser une cible distante',
   'form.confirmHost': 'Retapez le nom d’hôte de la cible pour confirmer',
   'form.personas': 'Personas',

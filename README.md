@@ -25,20 +25,20 @@ open `http://localhost:4100/console`.
 
 ## Layout
 
-| Folder        | Purpose                                                                |
-| ------------- | ---------------------------------------------------------------------- |
-| `app/`        | API, SSO, sessions, security, Postgres access                          |
-| `worker/`     | Run lifecycle, journey engine, friction model, drivers, guard, reports |
-| `ui/`         | Operator UI (EN/FR)                                                    |
-| `shared/`     | Schemas, loaders, PRNG, crypto, JWT, i18n                              |
-| `personas/`   | Persona data files + tests                                             |
-| `catalogue/`  | Versioned use-case catalogue                                           |
-| `config/`     | Friction weights, time multipliers, common UI names                    |
-| `fake-orqea/` | Fake target with friction scenarios and a fake admin console           |
-| `e2e/`        | End-to-end tests                                                       |
-| `brand/`      | Logo, icons, brand guide                                               |
-| `scripts/`    | Repository gates and tooling                                           |
-| `docs/`       | Architecture, decisions, contract, security, coverage, runbook         |
+| Folder        | Purpose                                                                 |
+| ------------- | ----------------------------------------------------------------------- |
+| `app/`        | API, SSO, sessions, security, Postgres access                           |
+| `worker/`     | Run lifecycle, journey engine, friction model, drivers, guard, reports  |
+| `ui/`         | Operator UI (EN/FR)                                                     |
+| `shared/`     | Schemas, loaders, PRNG, crypto, JWT, i18n                               |
+| `personas/`   | Persona data files + tests                                              |
+| `catalogue/`  | Versioned use-case catalogue                                            |
+| `config/`     | Friction weights, time multipliers, common UI names                     |
+| `fake-orqea/` | Test double of Orqea (real paths, payloads, names) + friction scenarios |
+| `e2e/`        | End-to-end tests                                                        |
+| `brand/`      | Logo, icons, brand guide                                                |
+| `scripts/`    | Repository gates and tooling                                            |
+| `docs/`       | Architecture, decisions, contract, security, coverage, runbook          |
 
 ## Quality gates (CI and pre-commit)
 
@@ -48,4 +48,10 @@ README in every folder, no skipped tests, secret scan, **100 % coverage per file
 
 ## Contract with Orqea
 
-[docs/ORQEA_CONTRACT.md](docs/ORQEA_CONTRACT.md).
+[docs/ORQEA_CONTRACT.md](docs/ORQEA_CONTRACT.md) (Orqea's real API shapes, the SSO `target` claim,
+refusal codes), [docs/ORQEA_INTEGRATION.md](docs/ORQEA_INTEGRATION.md) (running inside Orqea's docker
+compose: services, env vars, `FIGURA_TARGETS`) and [docs/ORQEA_UI_FACTS.md](docs/ORQEA_UI_FACTS.md)
+(what Orqea's UI does not name, as friction facts).
+
+Figura targets the Orqea environment the admin console is inspecting (`local` or `recette`, never
+production): the console signs it into the SSO token and the new-run form preselects it.

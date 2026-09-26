@@ -9,11 +9,33 @@ export const targetInfoSchema = z.object({
   version: z.string(),
 });
 export type TargetInfo = z.infer<typeof targetInfoSchema>;
-export const endpointsSchema = z.object({
-  endpoints: z.array(z.object({ method: z.string(), path: z.string() }).passthrough()),
-});
 export type Endpoint = { method: string; path: string };
-const cleanupSchema = z.object({ before: z.number(), after: z.number(), residualRows: z.number() });
+
+/**
+ * Every `{method, path}` pair found anywhere under `node`. Orqea's `GET /api` answers a NESTED
+ * tree (`{message: 'Orqea API', endpoints: {auth: {register: {method, path, …}}, …}}`,
+ * `routes/api/apiDescriptor.js`); the fake used to answer a flat list. Both are walked the same way.
+ */
+export function flattenEndpoints(node: unknown, out: Endpoint[] = []): Endpoint[] {
+  if (node === null || typeof node !== 'object') return out;
+  const o = node as Record<string, unknown>;
+  if (typeof o.method === 'string' && typeof o.path === 'string')
+    out.push({ method: o.method.toUpperCase(), path: o.path });
+  for (const child of Object.values(o)) flattenEndpoints(child, out);
+  return out;
+}
+
+export const endpointsSchema = z
+  .object({ endpoints: z.unknown() })
+  .transform((r) => flattenEndpoints(r.endpoints))
+  .refine((list) => list.length > 0);
+/** Orqea reports per-table counts (`{users: 3, boards: 2, …}`); the fake reports a total. */
+const countsSchema = z.union([z.number(), z.record(z.string(), z.number())]);
+const cleanupSchema = z.object({
+  before: countsSchema,
+  after: countsSchema,
+  residualRows: z.number(),
+});
 export type CleanupResult = z.infer<typeof cleanupSchema>;
 
 export const PATHS = {
@@ -85,8 +107,8 @@ export class OrqeaClient {
     return this.call(PATHS.target, targetInfoSchema, undefined, true);
   }
 
-  async endpoints(): Promise<Endpoint[]> {
-    return (await this.call(PATHS.endpoints, endpointsSchema)).endpoints;
+  endpoints(): Promise<Endpoint[]> {
+    return this.call(PATHS.endpoints, endpointsSchema);
   }
 
   async plans(): Promise<Plan[]> {

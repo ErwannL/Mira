@@ -43,9 +43,10 @@ export function mintSsoToken(
   audience: string,
   operator: string,
   nowS: number,
+  target?: string,
 ): string {
   return signJwt(
-    { iss: SSO_ISSUER, aud: audience, operator, iat: nowS, exp: nowS + SSO_TTL_S },
+    { iss: SSO_ISSUER, aud: audience, operator, iat: nowS, exp: nowS + SSO_TTL_S, target },
     secret,
   );
 }

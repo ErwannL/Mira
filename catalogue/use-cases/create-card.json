@@ -11,15 +11,25 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/boards"
+      "path": "/dashboard"
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{boardName}}",
           "fr": "{{boardName}}"
+        }
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "+ Add a card",
+          "fr": "+ Ajouter une carte"
         },
         "exact": true
       }
@@ -29,9 +39,10 @@
       "target": {
         "role": "textbox",
         "name": {
-          "en": "Card title",
-          "fr": "Titre de la carte"
-        }
+          "en": "Title",
+          "fr": "Titre"
+        },
+        "exact": true
       },
       "value": "{{cardTitle}}"
     },
@@ -40,53 +51,54 @@
       "target": {
         "role": "button",
         "name": {
-          "en": "Add card",
-          "fr": "Ajouter la carte"
-        }
+          "en": "Add",
+          "fr": "Ajouter"
+        },
+        "exact": true
       }
     },
     {
       "action": "expect",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{cardTitle}}",
           "fr": "{{cardTitle}}"
-        },
-        "exact": true
+        }
       }
     }
   ],
   "api": [
     {
       "method": "GET",
-      "path": "/api/boards/{{boardId}}",
+      "path": "/api/lists?board_id={{boardId}}",
       "auth": true,
       "save": {
-        "listId": "lists.0.id"
+        "listId": "lists.0.id",
+        "doneListId": "lists.2.id"
       }
     },
     {
       "method": "POST",
-      "path": "/api/lists/{{listId}}/cards",
+      "path": "/api/cards",
       "body": {
-        "title": "{{cardTitle}}"
+        "title": "{{cardTitle}}",
+        "list_id": "{{listId}}"
       },
       "auth": true,
       "save": {
-        "cardId": "id"
+        "cardId": "card.id"
       },
       "expectStatus": [201]
     }
   ],
   "success": {
     "ui": {
-      "role": "link",
+      "role": "button",
       "name": {
         "en": "{{cardTitle}}",
         "fr": "{{cardTitle}}"
-      },
-      "exact": true
+      }
     },
     "apiStatus": 201
   },

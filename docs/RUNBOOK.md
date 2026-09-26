@@ -7,12 +7,17 @@ cp .env.example .env        # then replace every change-me value (openssl rand -
 docker compose up --build   # db, app :4000, worker, fake-orqea :4100 (127.0.0.1 only)
 open http://localhost:4100/console      # fake admin console embedding Figura with SSO
 # or, without the console:
-npm ci && npm run sso:mint              # prints http://localhost:4000/#sso=<60 s token>
+npm ci && npm run sso:mint -- "Me" fake  # prints http://localhost:4000/#sso=<60 s token> (target claim "fake")
 ```
+
+Against the real Orqea (its local stack or recette, never production): Orqea's compose runs Figura
+itself — see [ORQEA_INTEGRATION.md](ORQEA_INTEGRATION.md). The console's "Figura" page signs the
+environment it inspects into the SSO token and the new-run form preselects it.
 
 ## A first run
 
-New run → mode _Journey_, target `http://fake-orqea:4100`, scenario `unclear-signup`, seed `42`.
+New run → mode _Journey_, Orqea to test `fake` (or a custom URL `http://fake-orqea:4100`), scenario
+`unclear-signup`, seed `42`.
 Queue a second run with the same seed and scenario `baseline`, then _Compare_ both.
 
 ## Develop

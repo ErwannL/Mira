@@ -38,6 +38,7 @@ export function fakeConfigFromEnv(env: Env): {
       ssoSecret: required(env, 'FIGURA_SSO_SECRET', 32),
       appUrl: env.FAKE_CONSOLE_APP_URL ?? 'http://localhost:4000',
       appId: env.FIGURA_APP_ID ?? 'figura',
+      consoleTarget: env.FAKE_CONSOLE_TARGET || null,
       nowS: () => Math.floor(Date.now() / 1000),
     },
     scenario: resolveScenario(scenarioInput),

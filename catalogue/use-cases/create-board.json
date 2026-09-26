@@ -11,7 +11,7 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/boards"
+      "path": "/dashboard"
     },
     {
       "action": "fill",
@@ -19,7 +19,7 @@
         "role": "textbox",
         "name": {
           "en": "Board name",
-          "fr": "Nom du tableau"
+          "fr": "Nom du board"
         }
       },
       "value": "{{boardName}}"
@@ -30,18 +30,20 @@
         "role": "button",
         "name": {
           "en": "Create board",
-          "fr": "Créer le tableau"
-        }
+          "fr": "Créer le board"
+        },
+        "exact": true
       }
     },
     {
       "action": "expect",
       "target": {
-        "role": "heading",
+        "role": "button",
         "name": {
-          "en": "{{boardName}}",
-          "fr": "{{boardName}}"
-        }
+          "en": "+ Add a card",
+          "fr": "+ Ajouter une carte"
+        },
+        "exact": true
       }
     }
   ],
@@ -50,22 +52,24 @@
       "method": "POST",
       "path": "/api/boards",
       "body": {
-        "name": "{{boardName}}"
+        "title": "{{boardName}}",
+        "default_table": true
       },
       "auth": true,
       "save": {
-        "boardId": "id"
+        "boardId": "board.id"
       },
       "expectStatus": [201]
     }
   ],
   "success": {
     "ui": {
-      "role": "heading",
+      "role": "button",
       "name": {
-        "en": "{{boardName}}",
-        "fr": "{{boardName}}"
-      }
+        "en": "+ Add a card",
+        "fr": "+ Ajouter une carte"
+      },
+      "exact": true
     },
     "apiStatus": 201
   },

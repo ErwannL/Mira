@@ -6,20 +6,30 @@
   },
   "area": "automation",
   "requires": ["create-board"],
-  "planGate": "automation",
+  "planGate": "free",
   "minutes": 3,
   "ui": [
     {
       "action": "goto",
-      "path": "/boards"
+      "path": "/dashboard"
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{boardName}}",
           "fr": "{{boardName}}"
+        }
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Rules",
+          "fr": "Règles"
         },
         "exact": true
       }
@@ -27,10 +37,10 @@
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
-          "en": "Automations",
-          "fr": "Automatisations"
+          "en": "New rule",
+          "fr": "Nouvelle règle"
         }
       }
     },
@@ -43,72 +53,48 @@
           "fr": "Nom de la règle"
         }
       },
-      "value": "Archive done cards"
-    },
-    {
-      "action": "select",
-      "target": {
-        "role": "combobox",
-        "name": {
-          "en": "When",
-          "fr": "Quand"
-        }
-      },
-      "value": "card-moved-done"
-    },
-    {
-      "action": "select",
-      "target": {
-        "role": "combobox",
-        "name": {
-          "en": "Then",
-          "fr": "Alors"
-        }
-      },
-      "value": "archive"
+      "value": "Light new cards"
     },
     {
       "action": "click",
       "target": {
         "role": "button",
         "name": {
-          "en": "Create rule",
-          "fr": "Créer la règle"
-        }
+          "en": "Save",
+          "fr": "Enregistrer"
+        },
+        "exact": true
       }
     },
     {
-      "action": "expect",
-      "target": {
-        "role": "status",
-        "name": {
-          "en": "Rule created",
-          "fr": "Règle créée"
-        }
+      "action": "expectText",
+      "text": {
+        "en": "Light new cards",
+        "fr": "Light new cards"
       }
     }
   ],
   "api": [
     {
       "method": "POST",
-      "path": "/api/boards/{{boardId}}/automations",
+      "path": "/api/boards/{{boardId}}/rules",
       "body": {
-        "name": "Archive done cards",
-        "trigger": "card-moved-done",
-        "action": "archive"
+        "name": "Light new cards",
+        "trigger": {
+          "type": "card_created"
+        },
+        "actions": [
+          {
+            "type": "complexity.set",
+            "complexity": "light"
+          }
+        ]
       },
       "auth": true,
       "expectStatus": [201]
     }
   ],
   "success": {
-    "ui": {
-      "role": "status",
-      "name": {
-        "en": "Rule created",
-        "fr": "Règle créée"
-      }
-    },
     "apiStatus": 201
   },
   "frictionHints": {

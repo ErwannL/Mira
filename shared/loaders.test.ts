@@ -53,9 +53,9 @@ function writeCatalogue(useCases: object[]): string {
 const landing = catalogue.useCases.find((u) => u.id === 'landing')!;
 
 describe('loadCatalogue', () => {
-  it('loads the 30 use cases with a version', () => {
+  it('loads the 31 use cases with a version', () => {
     expect(catalogue.version).toMatch(/^cat-/);
-    expect(catalogue.useCases).toHaveLength(30);
+    expect(catalogue.useCases).toHaveLength(31);
   });
   it('rejects invalid files, bad names, unknown requirements and cycles', () => {
     expect(() => loadCatalogue(writeCatalogue([{ ...landing, minutes: -1 }]))).toThrow(

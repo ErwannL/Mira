@@ -17,6 +17,7 @@ export function testConfig(overrides: Partial<FakeConfig> = {}): FakeConfig {
     ssoSecret: SSO,
     appUrl: 'http://localhost:4000',
     appId: 'figura',
+    consoleTarget: null,
     nowS: () => NOW,
     ...overrides,
   };
@@ -53,7 +54,13 @@ export async function makeFake(
     await call(
       'POST',
       '/api/auth/register',
-      { email, password: 'Str0ngPassword', acceptedTerms: true },
+      {
+        email,
+        password: 'Str0ngPassword1!',
+        acceptedTerms: true,
+        // Orqea refuses the "+" of a synthetic address as a username.
+        username: (email.split('@')[0] as string).replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 30),
+      },
       headers,
     );
     const u = fake.deps.store.userByEmail(email)!;
@@ -61,7 +68,7 @@ export async function makeFake(
     const login = await call(
       'POST',
       '/api/auth/login',
-      { email, password: 'Str0ngPassword' },
+      { email, password: 'Str0ngPassword1!' },
       headers,
     );
     return {
@@ -71,4 +78,21 @@ export async function makeFake(
     };
   };
   return { ...fake, call, admin, user };
+}
+
+/** A user with one board (Orqea's default lists) and one card in "to do". */
+export async function withBoard(scenario: Partial<Scenario> = {}, cfg: Partial<FakeConfig> = {}) {
+  const f = await makeFake(cfg, scenario);
+  const u = await f.user();
+  const board = await f.call('POST', '/api/boards', { title: 'Plan', default_table: true }, u.auth);
+  const boardId = (board.json.board as { id: number }).id;
+  const lists = (await f.call('GET', `/api/lists?board_id=${boardId}`, undefined, u.auth)).json
+    .lists as { id: number; title: string }[];
+  const card = await f.call(
+    'POST',
+    '/api/cards',
+    { title: 'Call Bob', list_id: String(lists[0]!.id) },
+    u.auth,
+  );
+  return { f, u, boardId, lists, cardId: (card.json.card as { id: number }).id };
 }

@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { randomInt } from 'node:crypto';
 import { base36Id } from '../../shared/crypto.js';
 import { runConfigSchema, type RunConfig } from '../../shared/run-config.js';
+import { applyTarget, publicTargets } from '../../shared/targets.js';
 import { purgeScreenshots } from '../../worker/runner.js';
 import type { SimData } from '../../worker/data.js';
 import { PRESETS } from '../../fake-orqea/scenario.js';
@@ -50,7 +51,13 @@ export function runRoutes(app: FastifyInstance, cfg: AppConfig, db: Db, data: Si
 }
 
 function runRoutes1(app: FastifyInstance, cfg: AppConfig, db: Db, data: SimData): void {
-  app.get('/api/me', async (req) => ({ operator: req.operator }));
+  /** Who is signed in, and which Orqea the console was inspecting (preselected for new runs). */
+  app.get('/api/me', async (req) => ({
+    operator: req.operator,
+    target: req.sessionTarget,
+    targetConfigured: req.sessionTarget === null ? null : req.sessionTarget in cfg.targets,
+    targets: publicTargets(cfg.targets),
+  }));
 
   app.get('/api/meta', async () => ({
     personas: data.personas.map((p) => ({
@@ -78,9 +85,12 @@ function runRoutes1(app: FastifyInstance, cfg: AppConfig, db: Db, data: SimData)
   }));
 
   app.post('/api/runs', async (req, reply) => {
-    const parsed = runConfigSchema.safeParse(
+    const resolved = applyTarget(
       (req.body as { config?: unknown } | undefined)?.config,
+      cfg.targets,
     );
+    if ('error' in resolved) return reply.code(400).send(resolved);
+    const parsed = runConfigSchema.safeParse(resolved.config);
     if (!parsed.success)
       return reply.code(400).send({
         error: 'INVALID_CONFIG',
@@ -100,6 +110,7 @@ function runRoutes1(app: FastifyInstance, cfg: AppConfig, db: Db, data: SimData)
       id,
       kind: config.kind,
       target: config.targetUrl,
+      targetName: config.target,
       seed,
     });
     return reply.code(201).send({ run: publicRun(run) });

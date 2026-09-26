@@ -2,6 +2,7 @@ import type { I18nKey } from '../../shared/i18n.js';
 import type { Ctx } from '../context.js';
 import { h, table } from '../dom.js';
 import type { PublicRun, UiEvent } from '../types.js';
+import { targetLabel } from './runs.js';
 
 const REPORTS = ['funnel', 'load', 'pricing', 'calibration'] as const;
 const FINAL = ['done', 'failed', 'refused', 'cancelled'];
@@ -166,7 +167,7 @@ export async function runView(ctx: Ctx, id: string): Promise<HTMLElement> {
       doc,
       'p',
       {},
-      `${t(`status.${run.status}` as I18nKey)} · ${t('report.seed')} ${run.seed} · ${run.targetUrl}`,
+      `${t(`status.${run.status}` as I18nKey)} · ${t('report.seed')} ${run.seed} · ${targetLabel(run)}`,
     ),
     run.refusalCode
       ? h(

@@ -17,7 +17,19 @@ describe('app config', () => {
       consoleOrigins: ['http://localhost:4100'],
       uiDir: '/ui',
       sessionTtlMinutes: 120,
+      targets: {},
     });
+  });
+  it('reads named Orqea targets from FIGURA_TARGETS, refusing a malformed one', () => {
+    const targets = '{"recette":{"api":"http://host.docker.internal:5102"}}';
+    expect(appConfigFromEnv({ ...env, FIGURA_TARGETS: targets }, { uiDir: '/ui' }).targets).toEqual(
+      {
+        recette: { api: 'http://host.docker.internal:5102', rewrite: {} },
+      },
+    );
+    expect(() => appConfigFromEnv({ ...env, FIGURA_TARGETS: '[' }, { uiDir: '/ui' })).toThrow(
+      'FIGURA_TARGETS',
+    );
   });
   it('overrides', () => {
     const c = appConfigFromEnv(

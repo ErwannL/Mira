@@ -60,7 +60,8 @@ function env(hash: string, handler: Handler, lang = 'en-GB') {
   return { win, doc, calls, fetchImpl, w: win as unknown as globalThis.Window };
 }
 function defaults(url: string): { status?: number; body?: unknown } {
-  if (url === '/api/me') return { body: { operator: 'Ops Alice' } };
+  if (url === '/api/me')
+    return { body: { operator: 'Ops Alice', target: null, targetConfigured: null, targets: [] } };
   if (url === '/api/runs') return { body: { runs: [run] } };
   if (url === '/api/meta') return { body: meta };
   if (url.startsWith('/api/runs/abc123/events'))
@@ -239,6 +240,42 @@ describe('views', () => {
     status = 201;
     await submit();
     expect(e.win.location.hash).toBe('#/runs/n1');
+  });
+
+  it('new run: preselects the Orqea the console inspects, or says it is not configured', async () => {
+    const targets = [
+      { name: 'local', api: 'http://backend:5001', web: 'http://frontend:3001' },
+      { name: 'recette', api: 'http://host.docker.internal:5102', web: null },
+    ];
+    const me = (target: string, targetConfigured: boolean) => (url: string) =>
+      url === '/api/me'
+        ? { body: { operator: 'Ops', target, targetConfigured, targets } }
+        : undefined;
+    const view = await route(ctxFor(env('', me('recette', true))), '/new');
+    const select = view.querySelector('select[name="target"]') as HTMLSelectElement;
+    expect(select.value).toBe('recette');
+    expect(select.options[2]!.textContent).toBe('recette — http://host.docker.internal:5102');
+    expect(view.querySelector('[role="status"]')!.textContent).toContain('Testing Orqea “recette”');
+    expect(readForm(view.querySelector('form') as HTMLFormElement)).toMatchObject({
+      target: 'recette',
+    });
+    const fr = await route(ctxFor(env('', me('qa', false)), 'fr'), '/new');
+    expect(fr.querySelector('[role="alert"]')!.textContent).toContain('TARGET_NOT_CONFIGURED');
+    expect((fr.querySelector('select[name="target"]') as HTMLSelectElement).value).toBe('');
+    expect(readForm(fr.querySelector('form') as HTMLFormElement).target).toBeUndefined();
+  });
+
+  it('runs on a named target show its name next to the URL', async () => {
+    const named = { ...run, config: { target: 'recette' } };
+    const e = env('', (url) =>
+      url === '/api/runs'
+        ? { body: { runs: [named] } }
+        : url === '/api/runs/abc123'
+          ? { body: { run: named, transitions: [] } }
+          : undefined,
+    );
+    expect((await route(ctxFor(e), '/runs')).textContent).toContain('recette · http://fake');
+    expect((await route(ctxFor(e), '/runs/abc123')).textContent).toContain('recette · http://fake');
   });
 
   it('run: refusal shown verbatim, lifecycle, reports, inspector per persona, delete', async () => {

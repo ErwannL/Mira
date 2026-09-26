@@ -1,6 +1,6 @@
 import type { Scenario } from './scenario.js';
 import type { Key, Lang } from './i18n.js';
-import type { User } from './store.js';
+import type { Board, User } from './store.js';
 
 export interface View {
   lang: Lang;
@@ -8,7 +8,14 @@ export interface View {
   scenario: Scenario;
   user: User | undefined;
   done: string | undefined;
+  /** Which collapsible panel the page opens with (`?open=`), after a form reloaded it. */
+  open: string | undefined;
+  /** Path of the current page, without the query string. */
+  path: string;
   consent: boolean;
+  /** The signed-in user's boards (sidebar) and notes (notes panel). */
+  boards: Board[];
+  notes: string[];
 }
 
 const ESC: Record<string, string> = {
@@ -23,76 +30,83 @@ export function esc(s: string): string {
 }
 
 /** A submit button; in the "unnamedControls" scenario, icon-only buttons lose their accessible name. */
-export function button(v: View, key: Key, opts: { icon?: boolean; attrs?: string } = {}): string {
-  const attrs = opts.attrs ? ` ${opts.attrs}` : '';
+export function button(v: View, key: Key, opts: { icon?: boolean } = {}): string {
   if (opts.icon && v.scenario.unnamedControls) {
-    return `<button type="submit"${attrs}><svg aria-hidden="true" width="16" height="16"><path d="M8 2v12M2 8h12"/></svg></button>`;
+    return `<button type="submit"><svg aria-hidden="true" width="16" height="16"><path d="M8 2v12M2 8h12"/></svg></button>`;
   }
-  return `<button type="submit"${attrs}>${esc(v.t(key))}</button>`;
+  return `<button type="submit">${esc(v.t(key))}</button>`;
 }
 
 export function field(
   label: string,
   name: string,
-  opts: {
-    type?: string;
-    required?: boolean;
-    value?: string;
-    textarea?: boolean;
-    extra?: string;
-  } = {},
+  opts: { type?: string; required?: boolean; extra?: string } = {},
 ): string {
   const req = opts.required ? ' required' : '';
   const extra = opts.extra ? ` ${opts.extra}` : '';
-  const control = opts.textarea
-    ? `<textarea name="${name}"${req}${extra}>${esc(opts.value ?? '')}</textarea>`
-    : `<input name="${name}" type="${opts.type ?? 'text'}" value="${esc(opts.value ?? '')}"${req}${extra}>`;
-  return `<label>${esc(label)} ${control}</label>`;
+  return `<label>${esc(label)} <input name="${name}" type="${opts.type ?? 'text'}"${req}${extra}></label>`;
 }
 
-export function select(
-  label: string,
-  name: string,
-  options: [string, string][],
-  selected: string,
-): string {
-  const opts = options
-    .map(
-      ([value, text]) =>
-        `<option value="${value}"${value === selected ? ' selected' : ''}>${esc(text)}</option>`,
-    )
-    .join('');
-  return `<label>${esc(label)} <select name="${name}">${opts}</select></label>`;
-}
+/** A hidden input whose value is sent as parsed JSON (objects and arrays in request bodies). */
+export const jsonInput = (name: string, value: unknown): string =>
+  `<input type="hidden" name="${name}" data-json value="${esc(JSON.stringify(value))}">`;
 
 export function apiForm(
   api: string,
   inner: string,
-  opts: { redirect?: string; done?: string; data?: Record<string, string> } = {},
+  opts: { redirect?: string; done?: string; id?: string; hidden?: boolean } = {},
 ): string {
-  const data = Object.entries(opts.data ?? {})
-    .map(([k, val]) => ` data-${k}="${esc(val)}"`)
-    .join('');
   const redirect = opts.redirect ? ` data-redirect="${esc(opts.redirect)}"` : '';
   const done = opts.done ? ` data-done="${opts.done}"` : '';
-  return `<form data-api="${api}"${redirect}${done}${data} novalidate>${inner}</form>`;
+  const id = opts.id ? ` id="${opts.id}"` : '';
+  return `<form data-api="${api}"${id}${redirect}${done}${opts.hidden ? ' hidden' : ''} novalidate>${inner}</form>`;
 }
 
+/** A button that shows/hides the element `target` (Orqea's panels and modals). */
+export const toggle = (label: string, target: string): string =>
+  `<button type="button" data-action="toggle" data-target="${target}">${esc(label)}</button>`;
+
+/** `hidden` unless the page was reloaded with `?open=<id>`. */
+export const hiddenUnless = (v: View, id: string): string => (v.open === id ? '' : ' hidden');
+
 function header(v: View): string {
+  const { t } = v;
   if (!v.user)
-    return `<header><a href="/">${v.t('brand')}</a> <a href="/login">${esc(v.t('logIn'))}</a></header>`;
+    return `<header><a href="/">${t('brand')}</a> <a href="/login">${esc(t('signInLink'))}</a></header>`;
   const links: [string, Key][] = [
-    ['/boards', 'boards'],
+    ['/dashboard', 'home'],
     ['/calendar', 'calendar'],
-    ['/notes', 'notes'],
-    ['/forms', 'forms'],
     ['/qr', 'qr'],
     ['/billing', 'billing'],
     ['/settings', 'settings'],
+    ['/profile', 'profile'],
   ];
-  const nav = links.map(([href, k]) => `<a href="${href}">${esc(v.t(k))}</a>`).join(' ');
-  return `<header><nav aria-label="${esc(v.t('nav'))}">${nav}</nav>
-<form action="/search" method="get" role="search"><input type="search" name="q" aria-label="${esc(v.t('search'))}"></form></header>`;
+  const nav = links.map(([href, k]) => `<a href="${href}">${esc(t(k))}</a>`).join(' ');
+  // Orqea opens a board through a button (openBoard()), never a link.
+  const boards = v.boards
+    .map(
+      (b) =>
+        `<li><button type="button" data-action="go" data-href="/board/${b.id}">${esc(b.title)}</button></li>`,
+    )
+    .join('');
+  return `<header><nav aria-label="${esc(t('nav'))}">${nav}<ul>${boards}</ul></nav>
+<button type="button" aria-label="${esc(t('search'))}" data-action="toggle" data-target="search-dialog">⌕</button>
+${toggle(t('notes'), 'notes-panel')}</header>${searchDialog(v)}${notesPanel(v)}`;
+}
+
+function searchDialog(v: View): string {
+  return `<div id="search-dialog" role="dialog" aria-modal="true" aria-label="${esc(v.t('search'))}" hidden>
+<input type="text" aria-label="${esc(v.t('searchPlaceholder'))}" data-search><ul data-search-results></ul></div>`;
+}
+
+function notesPanel(v: View): string {
+  const form = apiForm(
+    'POST /api/notes',
+    `<textarea name="content" aria-label="${esc(v.t('newNote'))}"></textarea>${button(v, 'save')}`,
+    { redirect: `${v.path}?open=notes-panel` },
+  );
+  const notes = v.notes.map((n) => `<li>${esc(n)}</li>`).join('');
+  return `<div id="notes-panel"${hiddenUnless(v, 'notes-panel')}><ul>${notes}</ul>${form}</div>`;
 }
 
 function cookieBanner(v: View): string {
@@ -105,7 +119,7 @@ function cookieBanner(v: View): string {
 function flash(v: View): string {
   const key = `done_${v.done ?? ''}` as Key;
   const text = v.done ? v.t(key) : undefined;
-  return text ? `<p role="status" aria-label="${esc(text)}">${esc(text)}</p>` : '';
+  return text ? `<p role="status">${esc(text)}</p>` : '';
 }
 
 function paywallDialog(v: View): string {
@@ -122,8 +136,10 @@ export function layout(v: View, title: string, body: string): string {
 }
 
 export const CSS = `body{font-family:system-ui,sans-serif;margin:0;color:#1d2330;background:#f6f7f9}
-header{display:flex;gap:1rem;align-items:center;padding:.5rem 1rem;background:#1d2330}header a{color:#fff}
+header{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;padding:.5rem 1rem;background:#1d2330}header a{color:#fff}
+header ul{display:inline-flex;gap:.5rem;list-style:none;margin:0;padding:0}
 main{padding:1rem;max-width:960px;margin:auto}label{display:block;margin:.5rem 0}
 section[data-list-id]{display:inline-block;vertical-align:top;min-width:180px;min-height:120px;background:#e8ebf0;margin:.25rem;padding:.5rem}
 [role=alert]{color:#a30000}[role=status]{color:#0a6b2d}#cookie-banner,#paywall{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:1rem;border-top:2px solid #1d2330}
+#search-dialog,#notes-panel{background:#fff;padding:1rem;border:1px solid #1d2330;margin:.5rem 1rem}
 `;

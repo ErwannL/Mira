@@ -20,6 +20,7 @@ describe('fake orqea start', () => {
       syntheticEnabled: true,
       adminAllowed: [],
       appId: 'figura',
+      consoleTarget: null,
     });
     expect(c.port).toBe(4100);
     expect(c.host).toBe('127.0.0.1');
@@ -41,6 +42,7 @@ describe('fake orqea start', () => {
       FAKE_PORT: '1',
       FAKE_HOST: '0.0.0.0',
       FAKE_SCENARIO_FILE: file,
+      FAKE_CONSOLE_TARGET: 'local',
     });
     expect(c.config).toMatchObject({
       env: 'staging',
@@ -50,6 +52,7 @@ describe('fake orqea start', () => {
       version: 'v2',
       appUrl: 'http://a',
       appId: 'x',
+      consoleTarget: 'local',
     });
     expect(c.scenario).toMatchObject({ slowMs: 4000, captcha: true });
     expect(fakeConfigFromEnv({ ...env, FAKE_SCENARIO: 'improved' }).scenario.cookieBanner).toBe(

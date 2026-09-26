@@ -19,8 +19,8 @@
       "target": {
         "role": "link",
         "name": {
-          "en": "Sign up",
-          "fr": "Créer un compte"
+          "en": "Try the beta",
+          "fr": "Essayer la bêta"
         }
       }
     },
@@ -29,9 +29,21 @@
       "target": {
         "role": "textbox",
         "name": {
-          "en": "Email",
-          "fr": "Adresse e-mail"
+          "en": "Username",
+          "fr": "Pseudo"
         }
+      },
+      "value": "{{username}}"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox",
+        "name": {
+          "en": "Email",
+          "fr": "Email"
+        },
+        "exact": true
       },
       "value": "{{email}}"
     },
@@ -51,8 +63,8 @@
       "target": {
         "role": "checkbox",
         "name": {
-          "en": "I accept the terms",
-          "fr": "J'accepte les conditions"
+          "en": "I accept the terms of use",
+          "fr": "J'accepte les conditions d'utilisation"
         }
       }
     },
@@ -61,19 +73,17 @@
       "target": {
         "role": "button",
         "name": {
-          "en": "Create account",
-          "fr": "Créer mon compte"
-        }
+          "en": "Sign up",
+          "fr": "S'inscrire"
+        },
+        "exact": true
       }
     },
     {
-      "action": "expect",
-      "target": {
-        "role": "heading",
-        "name": {
-          "en": "Check your inbox",
-          "fr": "Vérifiez votre boîte mail"
-        }
+      "action": "expectText",
+      "text": {
+        "en": "Account created",
+        "fr": "Compte créé"
       }
     }
   ],
@@ -84,6 +94,7 @@
       "body": {
         "email": "{{email}}",
         "password": "{{password}}",
+        "username": "{{username}}",
         "acceptedTerms": true
       },
       "auth": false,
@@ -91,13 +102,6 @@
     }
   ],
   "success": {
-    "ui": {
-      "role": "heading",
-      "name": {
-        "en": "Check your inbox",
-        "fr": "Vérifiez votre boîte mail"
-      }
-    },
     "apiStatus": 201
   },
   "frictionHints": {

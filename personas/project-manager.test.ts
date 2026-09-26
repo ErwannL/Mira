@@ -31,7 +31,7 @@ describe(`persona ${id}`, () => {
     expect(reaction(id, { visibleWords: 450 })).toBe('continue');
   });
 
-  it('buys automation', () => {
-    expect(money(id, 'automation')).toBe('convert');
+  it('buys advanced analytics', () => {
+    expect(money(id, 'advancedAnalytics')).toBe('convert');
   });
 });

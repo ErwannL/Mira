@@ -11,35 +11,46 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/settings"
-    },
-    {
-      "action": "check",
-      "target": {
-        "role": "checkbox",
-        "name": {
-          "en": "I understand this cannot be undone",
-          "fr": "Je comprends que c'est irréversible"
-        }
-      }
+      "path": "/settings?tab=privacy"
     },
     {
       "action": "click",
       "target": {
         "role": "button",
         "name": {
-          "en": "Delete my account",
-          "fr": "Supprimer mon compte"
+          "en": "Permanently delete my account",
+          "fr": "Supprimer définitivement mon compte"
+        }
+      }
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "password",
+        "name": {
+          "en": "To confirm, enter your password",
+          "fr": "Pour confirmer, saisissez votre mot de passe"
+        }
+      },
+      "value": "{{password}}"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Confirm deletion",
+          "fr": "Confirmer la suppression"
         }
       }
     },
     {
       "action": "expect",
       "target": {
-        "role": "heading",
+        "role": "link",
         "name": {
-          "en": "Account deleted",
-          "fr": "Compte supprimé"
+          "en": "Try the beta",
+          "fr": "Essayer la bêta"
         }
       }
     }
@@ -47,17 +58,20 @@
   "api": [
     {
       "method": "DELETE",
-      "path": "/api/me",
+      "path": "/api/user/me",
+      "body": {
+        "password": "{{password}}"
+      },
       "auth": true,
       "expectStatus": [200]
     }
   ],
   "success": {
     "ui": {
-      "role": "heading",
+      "role": "link",
       "name": {
-        "en": "Account deleted",
-        "fr": "Compte supprimé"
+        "en": "Try the beta",
+        "fr": "Essayer la bêta"
       }
     },
     "apiStatus": 200

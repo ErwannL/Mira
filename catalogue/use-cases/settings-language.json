@@ -11,15 +11,26 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/settings"
+      "path": "/profile"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Edit",
+          "fr": "Modifier"
+        },
+        "exact": true
+      }
     },
     {
       "action": "select",
       "target": {
         "role": "combobox",
         "name": {
-          "en": "Language",
-          "fr": "Langue"
+          "en": "Preferred language",
+          "fr": "Langue préférée"
         }
       },
       "value": "{{locale}}"
@@ -29,40 +40,36 @@
       "target": {
         "role": "button",
         "name": {
-          "en": "Save settings",
-          "fr": "Enregistrer les préférences"
-        }
+          "en": "Save",
+          "fr": "Sauvegarder"
+        },
+        "exact": true
       }
     },
     {
       "action": "expect",
       "target": {
-        "role": "status",
+        "role": "button",
         "name": {
-          "en": "Settings saved",
-          "fr": "Préférences enregistrées"
-        }
+          "en": "Search",
+          "fr": "Rechercher"
+        },
+        "exact": true
       }
     }
   ],
   "api": [
     {
       "method": "PATCH",
-      "path": "/api/me/settings",
+      "path": "/api/user/me/preferences",
       "body": {
         "language": "{{locale}}"
       },
-      "auth": true
+      "auth": true,
+      "expectStatus": [200]
     }
   ],
   "success": {
-    "ui": {
-      "role": "status",
-      "name": {
-        "en": "Settings saved",
-        "fr": "Préférences enregistrées"
-      }
-    },
     "apiStatus": 200
   },
   "frictionHints": {

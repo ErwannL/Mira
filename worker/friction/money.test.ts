@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { persona } from '../../shared/test-helpers/fixtures.js';
-import type { Plan } from '../../shared/plans.js';
+import type { BuyablePlan, Plan } from '../../shared/plans.js';
 import { costFor, decideMoney, reprice } from './money.js';
 
-const plans: Plan[] = [
+const plans: BuyablePlan[] = [
   { key: 'free', name: 'Free', priceMonthly: 0, currency: 'EUR', perSeat: false, features: [] },
   {
     key: 'pro',
@@ -58,6 +58,24 @@ describe('money', () => {
       decision: 'defer',
       planKey: null,
     });
+  });
+  it('a quote-based plan (priceMonthly null, "contact sales") is never bought', () => {
+    const enterprise: Plan = {
+      key: 'enterprise',
+      name: 'Enterprise',
+      priceMonthly: null,
+      currency: 'USD',
+      perSeat: false,
+      features: ['encryption'],
+    };
+    const out = decideMoney(
+      enc('encryption', ['encryption']),
+      [...plans, enterprise],
+      persona('agency'),
+    );
+    expect(out).toMatchObject({ decision: 'defer', planKey: null });
+    expect(out.rule).toBe('only a quote-based plan answers the need');
+    expect(reprice([enterprise], { enterprise: 99 })[0]!.priceMonthly).toBe(99);
   });
   it('reprices only listed plans', () => {
     const r = reprice(plans, { pro: 3 });

@@ -1,5 +1,5 @@
 // Dev helper: mints a valid 60 s SSO token from .env and prints the URL to open (no console needed).
-// Usage: npm run sso:mint [-- "Operator name"]
+// Usage: npm run sso:mint [-- "Operator name" [target]]  (target: the Orqea environment, e.g. local)
 import { createHmac } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 
@@ -17,6 +17,6 @@ if (secret.length < 32) {
 }
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 const now = Math.floor(Date.now() / 1000);
-const body = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ iss: 'orqea-admin-console', aud: env.FIGURA_APP_ID ?? 'figura', operator: process.argv[2] ?? 'Local developer', iat: now, exp: now + 60 })}`;
+const body = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ iss: 'orqea-admin-console', aud: env.FIGURA_APP_ID ?? 'figura', operator: process.argv[2] ?? 'Local developer', target: process.argv[3], iat: now, exp: now + 60 })}`;
 const token = `${body}.${createHmac('sha256', secret).update(body).digest('base64url')}`;
 console.info(`${env.FIGURA_PUBLIC_URL ?? 'http://localhost:4000'}/#sso=${token}`);

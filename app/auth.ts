@@ -12,6 +12,8 @@ export const SESSION_COOKIE = 'figura_session';
 declare module 'fastify' {
   interface FastifyRequest {
     operator: string;
+    /** Orqea environment named by the console at sign-in (SSO `target` claim), if any. */
+    sessionTarget: string | null;
   }
 }
 
@@ -43,10 +45,11 @@ export function authRoutes(app: FastifyInstance, cfg: AppConfig, db: Db, nowS: (
       idHash(session),
       r.operator,
       new Date(Date.now() + cfg.sessionTtlMinutes * 60_000),
+      r.target,
     );
-    await audit(db, r.operator, 'session.open');
+    await audit(db, r.operator, 'session.open', { target: r.target });
     void reply.setCookie(SESSION_COOKIE, session, cookieOptions(cfg));
-    return { operator: r.operator };
+    return { operator: r.operator, target: r.target };
   });
 
   app.post('/auth/logout', async (req, reply) => {
@@ -65,5 +68,6 @@ export function authRoutes(app: FastifyInstance, cfg: AppConfig, db: Db, nowS: (
     if (req.method !== 'GET' && req.headers['x-figura'] !== '1')
       return reply.code(403).send({ error: 'CSRF_HEADER_REQUIRED' });
     req.operator = session.operator;
+    req.sessionTarget = session.target;
   });
 }

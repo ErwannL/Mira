@@ -3,6 +3,7 @@ import { hostname } from 'node:os';
 import { createPool, migrate } from '../app/db/pool.js';
 import { dataKey } from '../shared/crypto.js';
 import { repoRoot } from '../shared/paths.js';
+import { parseTargets } from '../shared/targets.js';
 import { loadSimData } from './data.js';
 import { launchBrowser } from './drivers/browser.js';
 import { workLoop } from './loop.js';
@@ -43,6 +44,7 @@ export function workerConfigFromEnv(env: Env): {
       stepTimeoutMs: Number(env.FIGURA_STEP_TIMEOUT_MS ?? 8000),
       cancelPollMs: 1000,
       rowsPerAccount: 50,
+      targets: parseTargets(env.FIGURA_TARGETS),
     },
     databaseUrl,
     pollMs: Number(env.FIGURA_POLL_MS ?? 2000),

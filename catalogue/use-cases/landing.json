@@ -18,8 +18,8 @@
       "target": {
         "role": "link",
         "name": {
-          "en": "Sign up",
-          "fr": "Créer un compte"
+          "en": "Try the beta",
+          "fr": "Essayer la bêta"
         }
       }
     }
@@ -35,8 +35,8 @@
     "ui": {
       "role": "link",
       "name": {
-        "en": "Sign up",
-        "fr": "Créer un compte"
+        "en": "Try the beta",
+        "fr": "Essayer la bêta"
       }
     }
   },

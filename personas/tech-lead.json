@@ -9,6 +9,7 @@
   "goalFeatures": [
     "create-board",
     "create-card",
+    "stats",
     "automation-rule",
     "bulk-actions",
     "global-search",

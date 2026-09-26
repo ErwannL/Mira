@@ -11,28 +11,26 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/boards"
+      "path": "/dashboard"
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{boardName}}",
           "fr": "{{boardName}}"
-        },
-        "exact": true
+        }
       }
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{cardTitle}}",
           "fr": "{{cardTitle}}"
-        },
-        "exact": true
+        }
       }
     },
     {
@@ -40,9 +38,10 @@
       "target": {
         "role": "textbox",
         "name": {
-          "en": "New checklist item",
-          "fr": "Nouvel élément"
-        }
+          "en": "Add item",
+          "fr": "Ajouter un élément"
+        },
+        "exact": true
       },
       "value": "Call the supplier"
     },
@@ -51,41 +50,31 @@
       "target": {
         "role": "button",
         "name": {
-          "en": "Add item",
-          "fr": "Ajouter l'élément"
+          "en": "Add check",
+          "fr": "Ajouter un check"
         }
       }
     },
     {
-      "action": "expect",
-      "target": {
-        "role": "checkbox",
-        "name": {
-          "en": "Call the supplier",
-          "fr": "Call the supplier"
-        }
+      "action": "expectText",
+      "text": {
+        "en": "Call the supplier",
+        "fr": "Call the supplier"
       }
     }
   ],
   "api": [
     {
       "method": "POST",
-      "path": "/api/cards/{{cardId}}/checklist",
+      "path": "/api/cards/{{cardId}}/checklist/items",
       "body": {
-        "text": "Call the supplier"
+        "title": "Call the supplier"
       },
       "auth": true,
       "expectStatus": [201]
     }
   ],
   "success": {
-    "ui": {
-      "role": "checkbox",
-      "name": {
-        "en": "Call the supplier",
-        "fr": "Call the supplier"
-      }
-    },
     "apiStatus": 201
   },
   "frictionHints": {

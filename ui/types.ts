@@ -5,6 +5,8 @@ export interface PublicRun {
   label: string;
   seed: number;
   targetUrl: string;
+  /** Named Orqea target (FIGURA_TARGETS), when the run used one. */
+  config?: { target?: string | null };
   refusalCode: string | null;
   refusalMessage: string | null;
   error: string | null;
@@ -43,4 +45,12 @@ export interface UiEvent {
   rule: string;
   facts: Record<string, number | boolean> | null;
   screenshot: string | null;
+}
+
+/** GET /api/me: the operator and the Orqea the admin console was inspecting at sign-in. */
+export interface Me {
+  operator: string;
+  target: string | null;
+  targetConfigured: boolean | null;
+  targets: { name: string; api: string; web: string | null }[];
 }

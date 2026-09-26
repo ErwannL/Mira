@@ -11,28 +11,36 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/boards"
+      "path": "/dashboard"
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{boardName}}",
           "fr": "{{boardName}}"
-        },
-        "exact": true
+        }
       }
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{cardTitle}}",
           "fr": "{{cardTitle}}"
-        },
-        "exact": true
+        }
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "tab",
+        "name": {
+          "en": "Activity",
+          "fr": "Activité"
+        }
       }
     },
     {
@@ -40,8 +48,8 @@
       "target": {
         "role": "textbox",
         "name": {
-          "en": "Comment",
-          "fr": "Commentaire"
+          "en": "Add a comment",
+          "fr": "Ajouter un commentaire"
         }
       },
       "value": "@{{inviteEmail}} can you check?"
@@ -51,19 +59,17 @@
       "target": {
         "role": "button",
         "name": {
-          "en": "Post comment",
-          "fr": "Publier"
-        }
+          "en": "Add a comment",
+          "fr": "Ajouter un commentaire"
+        },
+        "exact": true
       }
     },
     {
-      "action": "expect",
-      "target": {
-        "role": "status",
-        "name": {
-          "en": "Comment posted",
-          "fr": "Commentaire publié"
-        }
+      "action": "expectText",
+      "text": {
+        "en": "@{{inviteEmail}} can you check?",
+        "fr": "@{{inviteEmail}} can you check?"
       }
     }
   ],
@@ -72,20 +78,13 @@
       "method": "POST",
       "path": "/api/cards/{{cardId}}/comments",
       "body": {
-        "text": "@{{inviteEmail}} can you check?"
+        "content": "@{{inviteEmail}} can you check?"
       },
       "auth": true,
       "expectStatus": [201]
     }
   ],
   "success": {
-    "ui": {
-      "role": "status",
-      "name": {
-        "en": "Comment posted",
-        "fr": "Commentaire publié"
-      }
-    },
     "apiStatus": 201
   },
   "frictionHints": {

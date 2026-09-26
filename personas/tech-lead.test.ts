@@ -28,7 +28,7 @@ describe(`persona ${id}`, () => {
   });
 
   it('has a high value threshold: an unsatisfying product does not convert her', () => {
-    expect(money(id, 'automation', 0)).not.toBe('convert');
+    expect(money(id, 'advancedAnalytics', 0)).not.toBe('convert');
   });
 
   it('tolerates dense UIs', () => {

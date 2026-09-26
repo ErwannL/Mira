@@ -2,7 +2,10 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
 import { adminApi } from './api/admin.js';
 import { authApi } from './api/auth.js';
-import { productApi } from './api/product.js';
+import { boardExtrasApi } from './api/board-extras.js';
+import { boardsApi } from './api/boards.js';
+import { describeApi } from './api/descriptor.js';
+import { personalApi } from './api/personal.js';
 import { clientScript } from './client/app.js';
 import { consolePages } from './console.js';
 import { ctxOf, type Deps, type FakeConfig } from './context.js';
@@ -48,9 +51,11 @@ export async function buildFakeOrqea(
     reply.type('text/javascript').send(clientScript()),
   );
   app.get('/static/app.css', async (_req, reply) => reply.type('text/css').send(CSS));
-  app.get('/api', async () => ({ endpoints }));
+  app.get('/api', async () => describeApi(endpoints));
   authApi(app, deps);
-  productApi(app, deps);
+  boardsApi(app, deps);
+  boardExtrasApi(app, deps);
+  personalApi(app, deps);
   adminApi(app, deps);
   publicPages(app, deps);
   boardPages(app, deps);

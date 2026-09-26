@@ -199,7 +199,9 @@ describe('events, memory, reports, sessions, audit', () => {
     expect(await consumeSsoToken(db, 'h1', soon)).toBe(true);
     expect(await consumeSsoToken(db, 'h1', soon)).toBe(false);
     await createSession(db, 's1', 'Ops', soon);
-    expect(await findSession(db, 's1')).toEqual({ operator: 'Ops' });
+    expect(await findSession(db, 's1')).toEqual({ operator: 'Ops', target: null });
+    await createSession(db, 's3', 'Ops', soon, 'local');
+    expect(await findSession(db, 's3')).toEqual({ operator: 'Ops', target: 'local' });
     await createSession(db, 's2', 'Old', new Date(Date.now() - 1000));
     expect(await findSession(db, 's2')).toBeNull();
     await deleteSession(db, 's1');

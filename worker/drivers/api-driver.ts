@@ -61,9 +61,16 @@ export class ApiDriver implements Driver {
         facts.networkErrors += 1;
       } else {
         facts.validationErrors += 1;
-        facts.unclearErrors += isUnclear(String(res.json.message ?? '')) ? 1 : 0;
+        // Orqea explains with a short message plus `issues` ("Weak password" + what is missing).
+        const issues = Array.isArray(res.json.issues) ? res.json.issues.map(String) : [];
+        facts.unclearErrors += isUnclear([String(res.json.message ?? ''), ...issues].join(' '))
+          ? 1
+          : 0;
       }
-      error = `${step.method} ${step.path} → ${res.status}${res.json.error ? ` ${String(res.json.error)}` : ''}`;
+      // Orqea answers `{message}` (auth, most routes) or `{code}` (rules, forms, 402); the fake used
+      // `{error}`. The first one present names the failure.
+      const why = res.json.error ?? res.json.code ?? res.json.message;
+      error = `${step.method} ${step.path} → ${res.status}${why === undefined ? '' : ` ${String(why)}`}`;
       break;
     }
     const wallMs = this.opts.now() - started;

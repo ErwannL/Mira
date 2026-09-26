@@ -16,10 +16,17 @@ beforeAll(async () => {
   app = await makeApp({
     uiDir: join(repoRoot(), 'dist', 'ui'),
     consoleOrigins: ['http://localhost:4199'],
+    targets: { local: { api: 'http://localhost:4199', web: 'http://localhost:4199', rewrite: {} } },
   });
   await app.app.listen({ port: 4198, host: '127.0.0.1' });
   appUrl = 'http://localhost:4198';
-  fake = await makeFake({ appUrl, ssoSecret: SSO, nowS: () => Math.floor(Date.now() / 1000) });
+  // Like Orqea's console: the handoff token names the environment it inspects.
+  fake = await makeFake({
+    appUrl,
+    ssoSecret: SSO,
+    consoleTarget: 'local',
+    nowS: () => Math.floor(Date.now() / 1000),
+  });
   await fake.app.listen({ port: 4199, host: '127.0.0.1' });
   consoleUrl = 'http://localhost:4199/console';
 });
@@ -44,6 +51,10 @@ describe('admin console embedding (e2e)', () => {
       .toBe(true);
     const inner = page.frames().find((f) => f.url().startsWith(appUrl))!;
     expect(inner.url()).not.toContain('sso=');
+    // The Orqea the console inspects is preselected for new runs.
+    await inner.goto(`${appUrl}/#/new`);
+    await expect.poll(async () => frame.getByText('Testing Orqea “local”').isVisible()).toBe(true);
+    expect(await frame.getByRole('combobox', { name: 'Orqea to test' }).inputValue()).toBe('local');
     await page.close();
   });
 

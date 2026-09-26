@@ -16,6 +16,7 @@ import { liveFake } from './test-helpers/live-fake.js';
 import { loadSimData } from './data.js';
 import { recoverStale, tick, workLoop } from './loop.js';
 import { executeRun, purgeScreenshots, type WorkerConfig, type WorkerDeps } from './runner.js';
+import { flattenEndpoints } from './target/client.js';
 import type { FunnelReport } from './reports/funnel.js';
 import type { LoadReport } from './reports/load.js';
 
@@ -35,6 +36,7 @@ const cfg: WorkerConfig = {
   stepTimeoutMs: 2500,
   cancelPollMs: 20,
   rowsPerAccount: 50,
+  targets: {},
 };
 beforeAll(async () => {
   browser = await chromium.launch({ headless: true });
@@ -154,22 +156,44 @@ describe('executeRun', () => {
     await reporting.close();
   });
 
-  it('fails loudly on catalogue drift', async () => {
-    const run = await queued('dr1');
+  it('reports catalogue drift in the summary without failing (Orqea describes its API partially)', async () => {
+    const run = await queued('dr1', {
+      kind: 'volume',
+      targetUsers: 1,
+      personaIds: ['student'],
+      totalSimulatedDays: 0.1,
+    });
     const drifting = (async (url: string, init?: RequestInit) => {
       const res = await fetch(url, init);
       if (!url.endsWith('/api')) return res;
-      const body = (await res.json()) as { endpoints: { path: string }[] };
-      return new Response(
-        JSON.stringify({ endpoints: body.endpoints.filter((e) => e.path !== '/api/notes') }),
-        { status: 200 },
-      );
+      const body = (await res.json()) as { endpoints: unknown };
+      const kept = flattenEndpoints(body.endpoints).filter((e) => e.path !== '/api/notes');
+      return new Response(JSON.stringify({ message: 'Orqea API', endpoints: kept }), {
+        status: 200,
+      });
     }) as typeof fetch;
-    await executeRun(run, cfg, deps({ fetchImpl: drifting }));
-    expect(await getRun(db, 'dr1')).toMatchObject({
-      status: 'failed',
-      error: 'CATALOGUE_DRIFT: notes-reminder: POST /api/notes',
+    const done = await executeRun(run, cfg, deps({ fetchImpl: drifting }));
+    expect(done.status).toBe('done');
+    expect(done.summary!.drift).toEqual([
+      { useCase: 'notes-reminder', method: 'POST', path: '/api/notes' },
+    ]);
+  });
+
+  it('named targets: the worker uses its own FIGURA_TARGETS; an unknown name is refused', async () => {
+    const unknown = await queued('nt1', { target: 'recette' });
+    const refused = await executeRun(unknown, cfg, deps());
+    expect(refused).toMatchObject({ status: 'refused', refusal_code: 'TARGET_NOT_CONFIGURED' });
+    expect(refused.refusal_message).toContain('FIGURA_TARGETS');
+    const local = await queued('nt2', {
+      kind: 'volume',
+      target: 'local',
+      targetUrl: 'http://ignored.example',
+      targetUsers: 1,
+      personaIds: ['student'],
+      totalSimulatedDays: 0.1,
     });
+    const named = { ...cfg, targets: { local: { api: fake.baseUrl, rewrite: {} } } };
+    expect((await executeRun(local, named, deps())).status).toBe('done');
   });
 
   it('volume mode: API clones, rate-limited, load report with latencies', async () => {

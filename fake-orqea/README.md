@@ -1,6 +1,6 @@
 # fake-orqea/
 
-A small fake Orqea: the default target, implementing docs/ORQEA_CONTRACT.md plus every catalogue step, with configurable friction scenarios.
+The test double of the real Orqea: its routes (`/dashboard`, `/board/:id`, `/settings?tab=…`…), accessible names (from Orqea's locales, en/fr), API paths, payloads and errors, plus docs/ORQEA_CONTRACT.md and configurable friction scenarios. Controls Orqea leaves unnamed are unnamed here too (docs/ORQEA_UI_FACTS.md).
 
 ## How it works
 
@@ -8,7 +8,7 @@ A small fake Orqea: the default target, implementing docs/ORQEA_CONTRACT.md plus
 
 ## Sub-folders
 
-- `api/` — JSON API: auth, product, plans, synthetic admin.
-- `client/` — Browser script (forms as JSON calls, drag and drop, paywall dialog).
+- `api/` — JSON API: auth, boards, board extras, personal, plans, descriptor, synthetic admin.
+- `client/` — Browser script (forms as JSON calls, panels, live search, selection count, drag and drop, paywall dialog).
 - `pages/` — Server-rendered pages in EN/FR.
 - `test-helpers/` — In-process fake builder (tests only).

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { flattenEndpoints } from '../../worker/target/client.js';
 import { makeFake, NOW } from '../test-helpers/fake.js';
 
 const synth = 'synth+r9-student@synthetic.invalid';
@@ -51,7 +52,8 @@ describe('synthetic admin api', () => {
     const f = await makeFake();
     await f.call('POST', '/api/auth/register', {
       email: synth,
-      password: 'Str0ngPassword',
+      username: 'sr9_student',
+      password: 'Str0ngPassword1!',
       acceptedTerms: true,
     });
     const r = await f.call(
@@ -60,9 +62,7 @@ describe('synthetic admin api', () => {
       { email: synth, runId: 'r9' },
       { ...f.admin, host: 'fake:4100' },
     );
-    expect(r.json.verifyUrl).toMatch(
-      /^http:\/\/fake:4100\/api\/auth\/verify-email\?token=[0-9a-f]+$/,
-    );
+    expect(r.json.verifyUrl).toMatch(/^http:\/\/fake:4100\/verify-email\?token=[0-9a-f]+$/);
     const https = await f.call(
       'POST',
       '/api/admin/synthetic/verification',
@@ -85,7 +85,7 @@ describe('synthetic admin api', () => {
     );
     await f.call('POST', '/api/auth/register', {
       email: 'real@example.com',
-      password: 'Str0ngPassword',
+      password: 'Str0ngPassword1!',
       acceptedTerms: true,
     });
     expect(
@@ -117,22 +117,28 @@ describe('synthetic admin api', () => {
   it('cleans up a run or old synthetic accounts, never real ones', async () => {
     const f = await makeFake();
     const s = await f.user(synth);
-    await f.call('POST', '/api/boards', { name: 'B' }, s.auth);
-    await f.call('POST', '/api/forms', { title: 'F', questions: ['q'] }, s.auth);
+    await f.call('POST', '/api/boards', { title: 'B', default_table: true }, s.auth);
+    await f.call('POST', '/api/notes', { content: 'n' }, s.auth);
     await f.user('real@example.com');
     const r = await f.call('POST', '/api/admin/synthetic/cleanup', { runId: 'r9' }, f.admin);
-    expect(r.json).toEqual({ before: 7, after: 1, residualRows: 0 });
+    const none = { boards: 0, lists: 0, cards: 0, forms: 0, notes: 0, qrCodes: 0 };
+    // Per-table counts, like Orqea's report.
+    expect(r.json).toEqual({
+      before: { ...none, users: 2, boards: 1, lists: 3, notes: 1 },
+      after: { ...none, users: 1 },
+      residualRows: 0,
+    });
     expect(f.deps.store.userByEmail('real@example.com')).toBeDefined();
     const old = await f.user('synth+r8-student@synthetic.invalid');
     old.user.createdAt = NOW - 7200;
     expect(
       (await f.call('POST', '/api/admin/synthetic/cleanup', { olderThanHours: 3 }, f.admin)).json
         .after,
-    ).toBe(2);
+    ).toMatchObject({ users: 2 });
     expect(
       (await f.call('POST', '/api/admin/synthetic/cleanup', { olderThanHours: 1 }, f.admin)).json
         .after,
-    ).toBe(1);
+    ).toMatchObject({ users: 1 });
     expect(
       (await f.call('POST', '/api/admin/synthetic/cleanup', { runId: 'BAD!' }, f.admin)).status,
     ).toBe(400);
@@ -156,11 +162,16 @@ describe('synthetic admin api', () => {
     expect(f.deps.scenarios.get('r1').extraSignupFields).toBe(0);
   });
 
-  it('lists its API endpoints for the drift check', async () => {
+  it("describes its API like Orqea's GET /api: a nested tree", async () => {
     const f = await makeFake();
-    const eps = (await f.call('GET', '/api')).json.endpoints as { method: string; path: string }[];
+    const body = (await f.call('GET', '/api')).json;
+    expect(body.message).toBe('Orqea API');
+    expect(Array.isArray(body.endpoints)).toBe(false);
+    expect((body.endpoints as Record<string, unknown>).auth).toBeTypeOf('object');
+    const eps = flattenEndpoints(body.endpoints);
     expect(eps).toContainEqual({ method: 'POST', path: '/api/auth/register' });
-    expect(eps).toContainEqual({ method: 'PATCH', path: '/api/cards/:cardId' });
+    expect(eps).toContainEqual({ method: 'PATCH', path: '/api/cards/:id' });
+    expect(eps.some((e) => e.path === '/api')).toBe(false);
     expect(eps.some((e) => e.method === 'HEAD')).toBe(false);
     expect(eps.some((e) => e.path.startsWith('/__control'))).toBe(false);
   });

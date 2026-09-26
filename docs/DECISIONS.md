@@ -89,3 +89,42 @@ Each entry: decision — why. Ambiguities were resolved towards the safer option
   browser — no coverage exclusion needed.
 - **Entrypoints `*/main.ts` are one-line calls** to tested `start()` functions and are the only
   source files excluded from coverage (see COVERAGE.md).
+
+## Against the real Orqea (catalogue cat-2.0.0)
+
+- **Orqea's product API is the contract; Figura adapts.** Catalogue `api` steps use Orqea's real
+  paths and bodies (`POST /api/boards {title, default_table}` → `{board}`, `POST /api/cards
+{title, list_id}`, `POST /api/cards/:id/comments {content}`, `/api/qr-codes`, `/api/user/me/*`…).
+  The fake Orqea mirrors them — it is now the test double of the real thing, not an alternative
+  design. Its only deliberate extras are the friction scenarios and one seeded label per board
+  (so the web form path has a label to attach, which Orqea requires).
+- **UI names come from Orqea's source and locales** (en and fr). A control Orqea leaves unnamed stays
+  a failing step — recorded in `docs/ORQEA_UI_FACTS.md` and reproduced by the fake — never a CSS
+  selector. `expectText` (visible text, optionally inside a role) exists only for outcomes Orqea
+  shows without a role or name.
+- **`GET /api` is walked as a tree.** Orqea's descriptor nests endpoints by resource; every
+  `{method, path}` leaf counts. Because it is documentation (it omits verify-email, notes, forms…),
+  **drift is reported (`summary.drift`) and never fails a run**, and the guard requires only
+  register, login and plans to be described; the admin API, verification and cleanup are proved by
+  being called.
+- **Plans: readable fields first, Orqea's own as fallback.** `priceMonthly: null` is a quote-based
+  plan ("contact sales"): shown, never bought by a persona (`only a quote-based plan answers the
+need`). The catalogue's paid gates are Orqea's feature keys (`qrCodes`, `advancedAnalytics`, new
+  `stats` use case); the fake's free plan locks those two.
+- **Named targets (`FIGURA_TARGETS`).** The console signs the Orqea environment it inspects into the
+  SSO token (`target`). The app resolves a run's URLs from the name server-side (client URLs are
+  ignored) and the worker re-resolves them from its own copy (it is where the browser runs).
+  Rewrites come only from server configuration, and every host a run reaches — API, web app,
+  rewrite destinations — goes through the production and remote-host guards. An unknown name never
+  blocks sign-in; it is shown as `TARGET_NOT_CONFIGURED` and refuses runs.
+- **The browser keeps public origins.** Inside a container `localhost` is not Orqea, but the SPA,
+  its links and its CORS allow-list are built on `http://localhost:*`. Playwright rewrites where
+  bytes come from (`route.continue({url})`) and the page keeps its public `Origin`. The run header
+  is added per request, only to requests ending at the API origin (fresh HMAC every time, never
+  sent to a third party).
+- **`recette` is a non-production env.** Production stays refused by host list or by any env not
+  explicitly safe, with no override.
+- **Usernames are always sent** (`s<runId>_<personaId>`, ≤ 30): Orqea derives one from the email
+  otherwise and refuses the `+` of a synthetic address.
+- **A use case ending on an action waits for the network to settle** (bounded by the step timeout),
+  so a navigation it started cannot abort the next use case's `goto`.

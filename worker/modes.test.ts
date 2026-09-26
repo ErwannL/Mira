@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { personas } from '../shared/test-helpers/fixtures.js';
-import { clonesOf, initialVars, newCredentials, selectPersonas } from './modes.js';
+import {
+  clonesOf,
+  initialVars,
+  newCredentials,
+  selectPersonas,
+  syntheticUsername,
+} from './modes.js';
 
 describe('modes', () => {
   it('selects personas and renormalises their weights', () => {
@@ -39,9 +45,17 @@ describe('modes', () => {
     const vars = initialVars('r1');
     expect(vars(selectPersonas(personas, ['teacher'])[0]!).boardName).toBe('Tableau teacher');
     expect(vars(selectPersonas(personas, ['student'])[0]!)).toEqual({
+      username: 'sr1_student',
       boardName: 'Board student',
       cardTitle: 'First task',
       inviteEmail: 'synth+r1-guest@synthetic.invalid',
+      strangerEmail: 'synth+r1-stranger-student@synthetic.invalid',
     });
+  });
+  it('usernames fit Orqea: 3-30 of [A-Za-z0-9_-]', () => {
+    expect(syntheticUsername('abcdefghij', 'screen-reader-user-c12')).toBe(
+      'sabcdefghij_screen-reader-user',
+    );
+    expect(syntheticUsername('r1', 'a.b+c')).toBe('sr1_a_b_c');
   });
 });

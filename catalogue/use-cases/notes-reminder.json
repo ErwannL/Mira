@@ -11,48 +11,45 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/notes"
-    },
-    {
-      "action": "fill",
-      "target": {
-        "role": "textbox",
-        "name": {
-          "en": "Note",
-          "fr": "Note"
-        }
-      },
-      "value": "Order flour"
-    },
-    {
-      "action": "fill",
-      "target": {
-        "role": "textbox",
-        "name": {
-          "en": "Remind me on",
-          "fr": "Me le rappeler le"
-        }
-      },
-      "value": "2030-01-15 09:00"
+      "path": "/dashboard"
     },
     {
       "action": "click",
       "target": {
         "role": "button",
         "name": {
-          "en": "Save note",
-          "fr": "Enregistrer la note"
+          "en": "Notes and reminders",
+          "fr": "Notes et rappels"
         }
       }
     },
     {
-      "action": "expect",
+      "action": "fill",
       "target": {
-        "role": "status",
+        "role": "textbox",
         "name": {
-          "en": "Reminder set",
-          "fr": "Rappel programmé"
+          "en": "New note",
+          "fr": "Nouvelle note"
         }
+      },
+      "value": "Order flour"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "Save",
+          "fr": "Enregistrer"
+        },
+        "exact": true
+      }
+    },
+    {
+      "action": "expectText",
+      "text": {
+        "en": "Order flour",
+        "fr": "Order flour"
       }
     }
   ],
@@ -61,21 +58,14 @@
       "method": "POST",
       "path": "/api/notes",
       "body": {
-        "text": "Order flour",
-        "remindAt": "2030-01-15T09:00:00Z"
+        "content": "Order flour",
+        "remind_at": "2030-01-15T09:00:00Z"
       },
       "auth": true,
       "expectStatus": [201]
     }
   ],
   "success": {
-    "ui": {
-      "role": "status",
-      "name": {
-        "en": "Reminder set",
-        "fr": "Rappel programmé"
-      }
-    },
     "apiStatus": 201
   },
   "frictionHints": {

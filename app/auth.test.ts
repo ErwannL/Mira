@@ -16,12 +16,17 @@ describe('SSO from the admin console', () => {
     const token = mintSsoToken(SSO, 'figura', 'Ops Alice', now());
     const r = await h!.req('POST', '/auth/sso', { body: { token } });
     expect(r.status).toBe(200);
-    expect(r.json).toEqual({ operator: 'Ops Alice' });
+    expect(r.json).toEqual({ operator: 'Ops Alice', target: null });
     const c = r.cookies.find((x) => x.name === 'figura_session')!;
     expect(c).toMatchObject({ httpOnly: true, sameSite: 'Strict', path: '/', maxAge: 3600 });
     expect(c.secure).toBeUndefined();
     const me = await h!.req('GET', '/api/me', { cookie: `figura_session=${c.value}` });
-    expect(me.json).toEqual({ operator: 'Ops Alice' });
+    expect(me.json).toEqual({
+      operator: 'Ops Alice',
+      target: null,
+      targetConfigured: null,
+      targets: [],
+    });
     expect((await h!.req('POST', '/auth/sso', { body: { token } })).json).toEqual({
       error: 'REUSED',
     });
@@ -58,6 +63,14 @@ describe('SSO from the admin console', () => {
         'EXPIRED',
       ],
       ['garbage', 'MALFORMED'],
+      [mintSsoToken(SSO, 'figura', 'x', t, 'Recette!'), 'BAD_TARGET'],
+      [
+        signJwt(
+          { iss: 'orqea-admin-console', aud: 'figura', exp: t + 30, operator: 'x', target: 7 },
+          SSO,
+        ),
+        'BAD_TARGET',
+      ],
     ];
     for (const [token, error] of cases) {
       const r = await h!.req('POST', '/auth/sso', { body: { token } });
@@ -86,7 +99,33 @@ describe('SSO from the admin console', () => {
       ),
       { secret: SSO, appId: 'figura', nowS: t },
     );
-    expect(r).toEqual({ operator: 'o'.repeat(120), exp: t + 60 });
+    expect(r).toEqual({ operator: 'o'.repeat(120), exp: t + 60, target: null });
+  });
+
+  it('keeps the signed target claim in the session; /api/me says whether it is configured', async () => {
+    h = await makeApp({
+      targets: {
+        local: { api: 'http://backend:5001', web: 'http://frontend:3001', rewrite: {} },
+        recette: { api: 'http://host.docker.internal:5102', rewrite: {} },
+      },
+    });
+    const me = async (target: string) => {
+      const token = mintSsoToken(SSO, 'figura', 'Ops', now(), target);
+      const r = await h!.req('POST', '/auth/sso', { body: { token } });
+      expect(r.json).toEqual({ operator: 'Ops', target });
+      const c = r.cookies.find((x) => x.name === 'figura_session')!;
+      return (await h!.req('GET', '/api/me', { cookie: `figura_session=${c.value}` })).json;
+    };
+    expect(await me('recette')).toEqual({
+      operator: 'Ops',
+      target: 'recette',
+      targetConfigured: true,
+      targets: [
+        { name: 'local', api: 'http://backend:5001', web: 'http://frontend:3001' },
+        { name: 'recette', api: 'http://host.docker.internal:5102', web: null },
+      ],
+    });
+    expect((await me('qa')).targetConfigured).toBe(false);
   });
 
   it('cross-site console: SameSite=None; Secure', async () => {

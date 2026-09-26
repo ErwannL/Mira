@@ -15,7 +15,7 @@ import { DISCLAIMER } from './meta.js';
 
 const endpoints = [
   { method: 'POST', path: '/api/auth/register' },
-  { method: 'GET', path: '/api/boards/:boardId' },
+  { method: 'GET', path: '/api/lists?board_id=<id>' },
   { method: 'GET', path: '/api/me' },
   { method: 'GET', path: '/api/admin/synthetic/target' },
   { method: 'GET', path: '/api' },

@@ -1,0 +1,50 @@
+{
+  "id": "stats",
+  "title": {
+    "en": "View my statistics",
+    "fr": "Voir mes statistiques"
+  },
+  "area": "insights",
+  "requires": ["create-card"],
+  "planGate": "advancedAnalytics",
+  "minutes": 2,
+  "ui": [
+    {
+      "action": "goto",
+      "path": "/stats"
+    },
+    {
+      "action": "expect",
+      "target": {
+        "role": "heading",
+        "name": {
+          "en": "My statistics",
+          "fr": "Mes statistiques"
+        }
+      }
+    }
+  ],
+  "api": [
+    {
+      "method": "GET",
+      "path": "/api/me/analytics/summary",
+      "auth": true,
+      "expectStatus": [200]
+    }
+  ],
+  "success": {
+    "ui": {
+      "role": "heading",
+      "name": {
+        "en": "My statistics",
+        "fr": "Mes statistiques"
+      }
+    },
+    "apiStatus": 200
+  },
+  "frictionHints": {
+    "fields": 0,
+    "clicks": 1,
+    "words": 150
+  }
+}

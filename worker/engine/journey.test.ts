@@ -126,10 +126,10 @@ describe('runSession', () => {
 
   it('paywall: convert is recorded and the locked step skipped; checkout then runs when enabled', async () => {
     const driver = new ScriptedDriver((uc) =>
-      uc.id === 'automation-rule'
+      uc.id === 'stats'
         ? {
             ok: false,
-            paywall: { code: 'FEATURE_LOCKED', featureKey: 'automation' },
+            paywall: { code: 'FEATURE_LOCKED', featureKey: 'advancedAnalytics' },
             facts: emptyFacts({ paywall: true }),
           }
         : {},
@@ -137,7 +137,7 @@ describe('runSession', () => {
     const { deps, events } = journeyDeps(driver, { allowCheckout: true });
     const l = life(calm);
     await runSession(l, sim, deps);
-    const pay = events.find((e) => e.useCaseId === 'automation-rule')!;
+    const pay = events.find((e) => e.useCaseId === 'stats')!;
     expect(pay.action).toBe('skip');
     expect(pay.money!.decision).toBe('convert');
     expect(l.memory.vars.planName).toBe('Pro');
@@ -149,8 +149,8 @@ describe('runSession', () => {
   it('paywall churn ends the life; pricing page defer continues', async () => {
     const broke = { ...calm, budget: 0, valueThreshold: 1 };
     const driver = new ScriptedDriver((uc) =>
-      uc.id === 'automation-rule'
-        ? { ok: false, paywall: { code: 'FEATURE_LOCKED', featureKey: 'automation' } }
+      uc.id === 'stats'
+        ? { ok: false, paywall: { code: 'FEATURE_LOCKED', featureKey: 'advancedAnalytics' } }
         : {},
     );
     const l = life(broke);
@@ -163,10 +163,10 @@ describe('runSession', () => {
 
   it('paywall on an already frustrated persona abandons', async () => {
     const driver = new ScriptedDriver((uc) =>
-      uc.id === 'automation-rule'
+      uc.id === 'stats'
         ? {
             ok: false,
-            paywall: { code: 'PLAN_LIMIT', featureKey: 'automation' },
+            paywall: { code: 'PLAN_LIMIT', featureKey: 'advancedAnalytics' },
             facts: emptyFacts({ networkErrors: 4 }),
           }
         : {},
@@ -220,10 +220,7 @@ describe('runSession', () => {
   });
 
   it('computes needed paid features from goals', () => {
-    expect(neededFeatures(persona('project-manager'), catalogue).sort()).toEqual([
-      'automation',
-      'bulk',
-    ]);
+    expect(neededFeatures(persona('project-manager'), catalogue)).toEqual(['advancedAnalytics']);
     expect(neededFeatures(persona('retired-volunteer'), catalogue)).toEqual([]);
   });
 

@@ -11,7 +11,8 @@
                                     ├── Chromium (journey mode, one context per persona session)
                                     └── HTTP (volume mode, rate-limited)
                                     ▼
-                         target: fake-orqea (:4100, default) or a non-production Orqea
+                         target: a named Orqea (FIGURA_TARGETS: local stack, recette — the
+                         console's SSO `target` claim picks it) or fake-orqea (:4100)
 ```
 
 ## Data flow of a run

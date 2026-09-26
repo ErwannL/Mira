@@ -9,10 +9,10 @@ export function adminApi(app: FastifyInstance, deps: Deps): void {
   const guard = async (req: FastifyRequest, reply: FastifyReply) => {
     const enabled = config.syntheticEnabled && !/^prod/i.test(config.env);
     const local = isLoopbackHost(req.ip) || config.adminAllowed.some((p) => req.ip.startsWith(p));
-    if (!enabled || !local) return reply.code(404).send({ error: 'NOT_FOUND' });
+    if (!enabled || !local) return reply.code(404).send({ message: 'Not Found' });
     const auth = req.headers.authorization ?? '';
     if (!safeEqual(auth, `Bearer ${config.serviceSecret}`))
-      return reply.code(401).send({ error: 'UNAUTHENTICATED' });
+      return reply.code(401).send({ error: 'SYNTHETIC_UNAUTHORIZED' });
   };
   const body = (req: FastifyRequest) => (req.body ?? {}) as Record<string, unknown>;
 
@@ -25,15 +25,14 @@ export function adminApi(app: FastifyInstance, deps: Deps): void {
 
   app.post('/api/admin/synthetic/verification', { preHandler: guard }, async (req, reply) => {
     const { email, runId } = body(req);
-    const user = store.userByEmail(String(email ?? '').toLowerCase());
+    const user = store.userByEmail(String(email ?? ''));
     const parsed = parseSyntheticEmail(String(email ?? ''));
     if (!user || !parsed || parsed.runId !== runId || user.verified) {
-      return reply.code(404).send({ error: 'NO_UNVERIFIED_SYNTHETIC_ACCOUNT' });
+      return reply.code(404).send({ error: 'NOT_FOUND' });
     }
+    // Like Orqea: the link a mail would carry, i.e. the WEB page that verifies (FRONTEND_URL).
     const proto = (req.headers['x-forwarded-proto'] as string | undefined) ?? 'http';
-    return {
-      verifyUrl: `${proto}://${req.headers.host}/api/auth/verify-email?token=${user.verifyToken}`,
-    };
+    return { verifyUrl: `${proto}://${req.headers.host}/verify-email?token=${user.verifyToken}` };
   });
 
   app.post('/api/admin/synthetic/cleanup', { preHandler: guard }, async (req, reply) => {
@@ -47,11 +46,12 @@ export function adminApi(app: FastifyInstance, deps: Deps): void {
       const cutoff = config.nowS() - olderThanHours * 3600;
       match = (u) => synthetic(u.email) !== null && u.createdAt <= cutoff;
     } else {
-      return reply.code(400).send({ error: 'RUN_ID_OR_AGE_REQUIRED' });
+      return reply.code(400).send({ error: 'INVALID_SELECTOR' });
     }
-    const before = store.rowCount();
+    // Per-table counts, as Orqea reports them.
+    const before = store.rowCounts();
     store.deleteUsers(match);
-    const after = store.rowCount();
+    const after = store.rowCounts();
     const residualRows = [...store.users.values()].filter(match).length;
     return { before, after, residualRows };
   });

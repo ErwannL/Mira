@@ -6,49 +6,40 @@
   },
   "area": "settings",
   "requires": ["login"],
-  "planGate": "export",
+  "planGate": "free",
   "minutes": 1,
   "ui": [
     {
       "action": "goto",
-      "path": "/settings"
+      "path": "/settings?tab=privacy"
     },
     {
       "action": "click",
       "target": {
         "role": "button",
         "name": {
-          "en": "Export my data",
-          "fr": "Exporter mes données"
+          "en": "Download my data (JSON)",
+          "fr": "Télécharger mes données (JSON)"
         }
       }
     },
     {
-      "action": "expect",
-      "target": {
-        "role": "status",
-        "name": {
-          "en": "Export ready",
-          "fr": "Export prêt"
-        }
+      "action": "expectText",
+      "text": {
+        "en": "Export downloaded.",
+        "fr": "Export téléchargé."
       }
     }
   ],
   "api": [
     {
       "method": "GET",
-      "path": "/api/export",
-      "auth": true
+      "path": "/api/user/me/export",
+      "auth": true,
+      "expectStatus": [200]
     }
   ],
   "success": {
-    "ui": {
-      "role": "status",
-      "name": {
-        "en": "Export ready",
-        "fr": "Export prêt"
-      }
-    },
     "apiStatus": 200
   },
   "frictionHints": {

@@ -38,7 +38,7 @@ export function reaction(
 export function money(id: string, featureKey: string | null, satisfaction = 1) {
   const p = persona(id);
   return decideMoney(
-    { featureKey, neededFeatures: [featureKey ?? 'automation'], satisfaction },
+    { featureKey, neededFeatures: [featureKey ?? 'advancedAnalytics'], satisfaction },
     PLANS,
     p,
   ).decision;

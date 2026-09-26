@@ -30,6 +30,7 @@ export async function makeApp(
     screenshotsDir: mkdtempSync(join(tmpdir(), 'app-shots-')),
     uiDir: join(tmpdir(), 'no-ui-here'),
     maxRunsListed: 50,
+    targets: {},
     ...overrides,
   };
   const app = await buildApp(cfg, { db, data, nowS, logger: false });
@@ -60,9 +61,9 @@ export async function makeApp(
     };
   };
   /** Signs in through SSO like the console would; returns the session cookie header. */
-  const login = async (operator = 'Ops Alice') => {
+  const login = async (operator = 'Ops Alice', target?: string) => {
     const r = await req('POST', '/auth/sso', {
-      body: { token: mintSsoToken(SSO, 'figura', operator, nowS()) },
+      body: { token: mintSsoToken(SSO, 'figura', operator, nowS(), target) },
     });
     const c = r.cookies.find((x) => x.name === 'figura_session')!;
     return `figura_session=${c.value}`;

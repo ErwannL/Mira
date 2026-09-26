@@ -1,4 +1,4 @@
-import type { Browser, BrowserContext, Locator, Page, Response } from 'playwright';
+import type { Browser, BrowserContext, Locator, Page, Response, Route } from 'playwright';
 import { join } from 'node:path';
 import { emptyFacts, mergeFacts, type Facts } from '../../shared/facts.js';
 import type { UiStep, UiTarget, UseCase } from '../../shared/catalogue-schema.js';
@@ -11,12 +11,39 @@ import type { ApiCall, AttemptContext, Driver, Paywall, StepOutcome } from '../e
 import { measureScript, type PageMeasure } from './measure.js';
 
 export interface BrowserDriverOptions {
+  /** What the persona opens (Orqea's public web origin). */
   baseUrl: string;
+  /** Orqea's API origin as reached from here: only requests to it carry X-Synthetic-Run. */
+  apiOrigin: string;
+  /** Public origin → reachable origin (see shared/targets.ts). */
+  rewrite: Record<string, string>;
   runHeader: () => string;
   screenshotDir: string | null;
   stepTimeoutMs: number;
   commonUi: CommonUi;
 }
+
+/**
+ * Where the browser's request really goes. The page keeps seeing the public origin (it is not a
+ * redirect); the run header goes only to Orqea's API, never to a third party.
+ */
+export function routeRequest(
+  url: string,
+  o: { apiOrigin: string; rewrite: Record<string, string> },
+): { url: string; rewritten: boolean; toApi: boolean } {
+  const from = new URL(url).origin;
+  const to = o.rewrite[from];
+  const final = to === undefined ? url : to + url.slice(from.length);
+  return { url: final, rewritten: to !== undefined, toApi: new URL(final).origin === o.apiOrigin };
+}
+
+/** Last steps after which nothing is left in flight. */
+const SETTLED: Record<string, true> = {
+  expect: true,
+  expectText: true,
+  goto: true,
+  openVerifyUrl: true,
+};
 
 class StepFailure extends Error {
   constructor(
@@ -63,7 +90,18 @@ export class BrowserDriver implements Driver {
     });
     const page = await context.newPage();
     page.setDefaultTimeout(opts.stepTimeoutMs);
-    return new BrowserDriver(context, page, persona, opts);
+    const driver = new BrowserDriver(context, page, persona, opts);
+    await context.route('**/*', (route) => driver.onRoute(route));
+    return driver;
+  }
+
+  private async onRoute(route: Route): Promise<void> {
+    const req = route.request();
+    const r = routeRequest(req.url(), this.opts);
+    if (!r.rewritten && !r.toApi) return route.continue();
+    // A fresh header per request: it is valid for 300 s and a session can outlast that.
+    const headers = r.toApi ? { ...req.headers(), [RUN_HEADER]: this.opts.runHeader() } : undefined;
+    return route.continue({ url: r.rewritten ? r.url : undefined, headers });
   }
 
   private onResponse(r: Response): void {
@@ -71,7 +109,8 @@ export class BrowserDriver implements Driver {
     if (r.headers()[CAPTCHA_HEADER] === '1') this.facts.captcha = true;
     if (r.status() >= 500) this.facts.networkErrors += 1;
     if (url.pathname.startsWith('/api')) {
-      const path = url.pathname.replace(/\/[a-z]+\d[0-9a-z]*(?=\/|$)/g, '/:id');
+      // Ids out of the path: Orqea's are integers, the old fake's were "b12"-like.
+      const path = url.pathname.replace(/\/(?:\d+|[a-z]+\d[0-9a-z]*)(?=\/|$)/g, '/:id');
       this.calls.push({
         method: r.request().method(),
         path,
@@ -103,10 +142,12 @@ export class BrowserDriver implements Driver {
     this.paywall = null;
     this.pending = [];
     const pages: string[] = [];
-    await this.context.setExtraHTTPHeaders({ [RUN_HEADER]: this.opts.runHeader() });
     let error: string | null = null;
     try {
       for (const [i, step] of useCase.ui.entries()) await this.run(step, i, ctx, pages);
+      // A use case that ends on an action (e.g. "Choose Pro"): let the navigation it started land
+      // before the next use case navigates, as a person would wait for the page.
+      if (!(useCase.ui.at(-1)!.action in SETTLED)) await this.settleNetwork();
     } catch (e) {
       const failure = e as StepFailure;
       error = failure.message;
@@ -161,6 +202,17 @@ export class BrowserDriver implements Driver {
       this.measuredUrl = this.page.url();
       this.absorb(await this.measure());
     }
+    if (step.action === 'expectText') {
+      const text = (l: 'en' | 'fr') => fillTemplate(step.text[l], ctx.vars);
+      const byText = (l: 'en' | 'fr') =>
+        step.role
+          ? this.page.getByRole(step.role as Parameters<Page['getByRole']>[0]).filter({
+              hasText: text(l),
+            })
+          : this.page.getByText(text(l));
+      await this.settle(byText, index, ctx, `"${text(ctx.persona.locale)}"`, null);
+      return;
+    }
     const target = await this.find(step.target, index, ctx);
     // find() only returns visible controls, so an "expect" step is complete here.
     if (step.action === 'expect') return;
@@ -168,7 +220,7 @@ export class BrowserDriver implements Driver {
   }
 
   private async act(
-    step: Exclude<UiStep, { action: 'goto' | 'openVerifyUrl' | 'press' | 'expect' }>,
+    step: Exclude<UiStep, { action: 'goto' | 'openVerifyUrl' | 'press' | 'expect' | 'expectText' }>,
     target: Locator,
     ctx: AttemptContext,
     index: number,
@@ -209,19 +261,34 @@ export class BrowserDriver implements Driver {
   }
 
   /** Finds a control by role + accessible name in the persona's language, else in the other one. */
-  private async find(target: UiTarget, index: number, ctx: AttemptContext): Promise<Locator> {
+  private find(target: UiTarget, index: number, ctx: AttemptContext): Promise<Locator> {
+    const name = (l: 'en' | 'fr') => fillTemplate(target.name[l], ctx.vars);
+    return this.settle(
+      (l) => this.locate(target, name(l)),
+      index,
+      ctx,
+      `${target.role} named "${name(ctx.persona.locale)}"`,
+      target.role,
+    );
+  }
+
+  /** Waits for the persona's-language locator, the other language's, or a blocking alert. */
+  private async settle(
+    locator: (lang: 'en' | 'fr') => Locator,
+    index: number,
+    ctx: AttemptContext,
+    what: string,
+    role: string | null,
+  ): Promise<Locator> {
     const own = ctx.persona.locale;
     const other = own === 'fr' ? 'en' : 'fr';
-    const mine = this.locate(target, fillTemplate(target.name[own], ctx.vars));
-    const theirs = this.locate(target, fillTemplate(target.name[other], ctx.vars));
+    const mine = locator(own).first();
+    const theirs = locator(other).first();
     const blocker = this.page.getByRole('alert').or(this.page.getByRole('alertdialog')).first();
     try {
       await mine.or(theirs).or(blocker).first().waitFor({ state: 'visible' });
     } catch {
-      throw new StepFailure(
-        `step ${index + 1}: no ${target.role} named "${fillTemplate(target.name[own], ctx.vars)}"`,
-        target.role,
-      );
+      throw new StepFailure(`step ${index + 1}: no ${what}`, role);
     }
     if (await mine.isVisible()) return mine;
     if (await theirs.isVisible()) {
@@ -233,6 +300,14 @@ export class BrowserDriver implements Driver {
       ? 'paywall shown'
       : `error shown: ${(await blocker.innerText()).trim()}`;
     throw new StepFailure(`step ${index + 1}: ${blocked}`, null);
+  }
+
+  private async settleNetwork(): Promise<void> {
+    await this.page
+      .waitForLoadState('networkidle', { timeout: this.opts.stepTimeoutMs })
+      .catch(() => {
+        // Never idle (polling, long requests): carry on, the step itself succeeded.
+      });
   }
 
   private async dismissCookies(): Promise<void> {

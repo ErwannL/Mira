@@ -1,75 +1,92 @@
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 
+/** Entities mirror the real Orqea's rows closely enough for the API shapes; ids are integers. */
 export interface User {
-  id: string;
+  id: number;
   email: string;
-  username: string | null;
+  username: string;
   passwordHash: string;
   verified: boolean;
   verifyToken: string;
   language: string;
   theme: string;
   plan: string;
-  onboarded: boolean;
+  onboardingDismissed: boolean;
   createdAt: number;
   runId: string | null;
 }
-export interface Board {
-  id: string;
-  ownerId: string;
+export interface Rule {
+  id: number;
   name: string;
-  members: string[];
-  guestLinks: string[];
-  rules: { name: string; trigger: string; action: string }[];
+  trigger: { type: string };
+  actions: { type: string }[];
+}
+export interface Board {
+  id: number;
+  ownerId: number;
+  title: string;
+  invitations: string[];
+  rules: Rule[];
+  labels: { id: number; title: string }[];
+  priorities: { id: number; title: string }[];
 }
 export interface List {
-  id: string;
-  boardId: string;
-  name: string;
+  id: number;
+  boardId: number;
+  title: string;
   position: number;
 }
 export interface Card {
-  id: string;
-  listId: string;
+  id: number;
+  listId: number;
   title: string;
   description: string;
-  priority: string;
-  checklist: { text: string }[];
-  comments: { authorId: string; text: string; mentions: string[] }[];
+  priorityId: number | null;
+  complexity: string | null;
+  checklist: { id: number; title: string; done: boolean }[];
+  comments: { id: number; authorId: number; content: string }[];
+}
+export interface FormField {
+  id: string;
+  type: string;
+  label: string;
+  required: boolean;
 }
 export interface Form {
-  id: string;
-  ownerId: string;
+  id: number;
+  boardId: number;
+  ownerId: number;
   title: string;
-  questions: string[];
-  answers: string[][];
+  token: string;
+  config: { target_list_id: number; label_ids: number[]; fields: FormField[]; title_field: string };
 }
 export interface Note {
-  id: string;
-  ownerId: string;
-  text: string;
-  remindAt: string;
+  id: number;
+  ownerId: number;
+  content: string;
+  remindAt: string | null;
 }
 export interface Qr {
-  id: string;
-  ownerId: string;
-  url: string;
+  id: number;
+  ownerId: number;
+  label: string;
+  targetUrl: string;
 }
 
 export class Store {
-  users = new Map<string, User>();
-  tokens = new Map<string, string>();
-  boards = new Map<string, Board>();
-  lists = new Map<string, List>();
-  cards = new Map<string, Card>();
-  forms = new Map<string, Form>();
-  notes = new Map<string, Note>();
-  qrs = new Map<string, Qr>();
+  users = new Map<number, User>();
+  tokens = new Map<string, number>();
+  boards = new Map<number, Board>();
+  lists = new Map<number, List>();
+  cards = new Map<number, Card>();
+  forms = new Map<number, Form>();
+  notes = new Map<number, Note>();
+  qrs = new Map<number, Qr>();
   private seq = 0;
 
-  id(prefix: string): string {
+  id(): number {
     this.seq += 1;
-    return `${prefix}${this.seq.toString(36)}`;
+    return this.seq;
   }
 
   userByEmail(email: string): User | undefined {
@@ -78,7 +95,7 @@ export class Store {
 
   userByToken(token: string | undefined): User | undefined {
     const id = token ? this.tokens.get(token) : undefined;
-    return id ? this.users.get(id) : undefined;
+    return id === undefined ? undefined : this.users.get(id);
   }
 
   issueToken(user: User): string {
@@ -87,17 +104,17 @@ export class Store {
     return token;
   }
 
-  boardsOf(userId: string): Board[] {
+  boardsOf(userId: number): Board[] {
     return [...this.boards.values()].filter((b) => b.ownerId === userId);
   }
 
-  listsOf(boardId: string): List[] {
+  listsOf(boardId: number): List[] {
     return [...this.lists.values()]
       .filter((l) => l.boardId === boardId)
       .sort((a, b) => a.position - b.position);
   }
 
-  cardsOf(listId: string): Card[] {
+  cardsOf(listId: number): Card[] {
     return [...this.cards.values()].filter((c) => c.listId === listId);
   }
 
@@ -106,17 +123,17 @@ export class Store {
     return this.boards.get(list.boardId) as Board;
   }
 
-  /** Number of stored rows (all entity kinds) — used by the cleanup report. */
-  rowCount(): number {
-    return (
-      this.users.size +
-      this.boards.size +
-      this.lists.size +
-      this.cards.size +
-      this.forms.size +
-      this.notes.size +
-      this.qrs.size
-    );
+  /** Row counts per table, like Orqea's cleanup report. */
+  rowCounts(): Record<string, number> {
+    return {
+      users: this.users.size,
+      boards: this.boards.size,
+      lists: this.lists.size,
+      cards: this.cards.size,
+      forms: this.forms.size,
+      notes: this.notes.size,
+      qrCodes: this.qrs.size,
+    };
   }
 
   deleteUsers(match: (u: User) => boolean): void {
@@ -126,9 +143,10 @@ export class Store {
           for (const c of this.cardsOf(l.id)) this.cards.delete(c.id);
           this.lists.delete(l.id);
         }
+        for (const [k, f] of this.forms) if (f.boardId === b.id) this.forms.delete(k);
         this.boards.delete(b.id);
       }
-      for (const map of [this.forms, this.notes, this.qrs] as Map<string, { ownerId: string }>[]) {
+      for (const map of [this.notes, this.qrs] as Map<number, { ownerId: number }>[]) {
         for (const [k, v] of map) if (v.ownerId === u.id) map.delete(k);
       }
       for (const [t, id] of this.tokens) if (id === u.id) this.tokens.delete(t);

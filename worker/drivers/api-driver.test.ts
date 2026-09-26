@@ -33,7 +33,8 @@ describe('ApiDriver', () => {
     const d = driver();
     const vars: Record<string, string> = {
       email: 'synth+r1-student@synthetic.invalid',
-      password: 'Str0ngPassword1',
+      username: 'sr1_student',
+      password: 'Str0ngPassword1!',
       boardName: 'Uni',
       cardTitle: 'Essay',
     };
@@ -46,7 +47,7 @@ describe('ApiDriver', () => {
     });
     const login403 = await d.attempt(uc('login'), ctx(vars));
     expect(login403.ok).toBe(false);
-    expect(login403.error).toContain('403 EMAIL_NOT_VERIFIED');
+    expect(login403.error).toBe('POST /api/auth/login → 403 Email not verified');
     expect(login403.facts.validationErrors).toBe(1);
     vars.verifyToken = fake.deps.store.userByEmail(vars.email!)!.verifyToken;
     expect((await d.attempt(uc('verify-email'), ctx(vars))).ok).toBe(true);
@@ -62,23 +63,33 @@ describe('ApiDriver', () => {
     Object.assign(vars, card.captured);
     const search = await d.attempt(uc('global-search'), ctx({ ...vars, cardTitle: 'Es say' }));
     expect(search.ok).toBe(true);
-    const paywalled = await d.attempt(uc('automation-rule'), ctx(vars));
+    const rule = await d.attempt(uc('automation-rule'), ctx(vars));
+    expect(rule.ok).toBe(true);
+    const lists = await d.attempt(uc('create-list'), ctx(vars));
+    expect(lists.captured.backlogListId).toBeDefined();
+    const paywalled = await d.attempt(uc('qr-create'), ctx(vars));
     expect(paywalled).toMatchObject({
       ok: false,
-      paywall: { code: 'FEATURE_LOCKED', featureKey: 'automation' },
+      paywall: { code: 'FEATURE_LOCKED', featureKey: 'qrCodes' },
     });
     expect(paywalled.facts.paywall).toBe(true);
     await d.close();
   });
 
-  it('turns mistakes into validation errors with clear messages', async () => {
+  it('turns mistakes into validation errors, clear thanks to Orqea issues', async () => {
     const d = driver();
-    const vars = { email: 'synth+r1-sam@synthetic.invalid', password: 'Str0ngPassword1' };
-    for (const m of ['typoEmail', 'weakPassword', 'forgetTerms'] as const) {
+    const vars = {
+      email: 'synth+r1-sam@synthetic.invalid',
+      username: 'sr1_sam',
+      password: 'Str0ngPassword1!',
+    };
+    for (const m of ['typoEmail', 'weakPassword'] as const) {
       const r = await d.attempt(uc('signup'), ctx(vars, [m]));
       expect(r.ok, m).toBe(false);
       expect(r.facts).toMatchObject({ validationErrors: 1, unclearErrors: 0 });
     }
+    // Orqea's API does not check acceptedTerms (only its web form does): a known fact.
+    expect((await d.attempt(uc('signup'), ctx(vars, ['forgetTerms']))).ok).toBe(true);
   });
 
   it('counts unclear messages, captcha that would show, and plan limits without a feature', async () => {
@@ -92,7 +103,8 @@ describe('ApiDriver', () => {
     });
     const vars: Record<string, string> = {
       email: 'synth+r1-x@synthetic.invalid',
-      password: 'Str0ngPassword1',
+      username: 'sr1_x',
+      password: 'Str0ngPassword1!',
       boardName: 'A',
     };
     const bad = await d.attempt(uc('signup'), ctx(vars, ['typoEmail']));
@@ -103,7 +115,7 @@ describe('ApiDriver', () => {
     Object.assign(vars, (await d.attempt(uc('login'), ctx(vars))).captured);
     await d.attempt(uc('create-board'), ctx(vars));
     const limit = await d.attempt(uc('create-board'), ctx(vars));
-    expect(limit.paywall).toEqual({ code: 'PLAN_LIMIT', featureKey: 'boards' });
+    expect(limit.paywall).toEqual({ code: 'PLAN_LIMIT', featureKey: 'maxBoards' });
     await f2.close();
   });
 
@@ -133,6 +145,16 @@ describe('ApiDriver', () => {
       ctx(vars),
     );
     expect(noMessage.facts.unclearErrors).toBe(1);
+    expect(noMessage.error).toBe('POST /api/auth/register → 400');
+    const coded = await driver({
+      fetchImpl: respond(400, '{"code":"NO_ACTIONS","field":"actions"}'),
+    }).attempt(uc('signup'), ctx(vars));
+    expect(coded.error).toBe('POST /api/auth/register → 400 NO_ACTIONS');
+    const legacy = await driver({ fetchImpl: respond(409, '{"error":"EMAIL_EXISTS"}') }).attempt(
+      uc('signup'),
+      ctx(vars),
+    );
+    expect(legacy.error).toBe('POST /api/auth/register → 409 EMAIL_EXISTS');
     const missing = await driver({ fetchImpl: respond(201, '{}') }).attempt(
       uc('create-board'),
       ctx(vars),

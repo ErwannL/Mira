@@ -11,15 +11,25 @@
   "ui": [
     {
       "action": "goto",
-      "path": "/boards"
+      "path": "/dashboard"
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{boardName}}",
           "fr": "{{boardName}}"
+        }
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": {
+          "en": "+ Add a list",
+          "fr": "+ Ajouter une liste"
         },
         "exact": true
       }
@@ -40,44 +50,35 @@
       "target": {
         "role": "button",
         "name": {
-          "en": "Add list",
-          "fr": "Ajouter la liste"
+          "en": "Add the new list",
+          "fr": "Ajouter la nouvelle liste"
         }
       }
     },
     {
-      "action": "expect",
-      "target": {
-        "role": "region",
-        "name": {
-          "en": "Backlog",
-          "fr": "Backlog"
-        }
+      "action": "expectText",
+      "text": {
+        "en": "Backlog",
+        "fr": "Backlog"
       }
     }
   ],
   "api": [
     {
       "method": "POST",
-      "path": "/api/boards/{{boardId}}/lists",
+      "path": "/api/lists",
       "body": {
-        "name": "Backlog"
+        "title": "Backlog",
+        "board_id": "{{boardId}}"
       },
       "auth": true,
       "save": {
-        "listId": "id"
+        "backlogListId": "list.id"
       },
       "expectStatus": [201]
     }
   ],
   "success": {
-    "ui": {
-      "role": "region",
-      "name": {
-        "en": "Backlog",
-        "fr": "Backlog"
-      }
-    },
     "apiStatus": 201
   },
   "frictionHints": {

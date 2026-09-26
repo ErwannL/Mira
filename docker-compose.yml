@@ -8,6 +8,7 @@ x-env: &common
   FIGURA_SSO_SECRET: ${FIGURA_SSO_SECRET:?set in .env}
   FIGURA_APP_ID: ${FIGURA_APP_ID:-figura}
   FIGURA_SCREENSHOTS_DIR: /data/screenshots
+  FIGURA_TARGETS: ${FIGURA_TARGETS:-}
 
 services:
   db:
@@ -70,6 +71,7 @@ services:
       # The worker container reaches the admin API over the compose network.
       FAKE_ADMIN_ALLOWED: ${FAKE_ADMIN_ALLOWED:-172.,192.168.,10.}
       FAKE_CONSOLE_APP_URL: http://localhost:4000
+      FAKE_CONSOLE_TARGET: ${FAKE_CONSOLE_TARGET:-}
     ports: ['127.0.0.1:4100:4100']
     networks: [internal]
     read_only: true

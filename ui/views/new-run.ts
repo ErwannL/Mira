@@ -1,7 +1,7 @@
 import type { Ctx } from '../context.js';
 import { h } from '../dom.js';
 import { ApiError } from '../api.js';
-import type { Meta } from '../types.js';
+import type { Me, Meta } from '../types.js';
 
 function field(ctx: Ctx, label: string, control: HTMLElement): HTMLElement {
   return h(ctx.doc, 'label', {}, h(ctx.doc, 'span', {}, label), control);
@@ -14,6 +14,7 @@ export function readForm(form: HTMLFormElement): Record<string, unknown> {
   const personas = Array.from(
     form.querySelectorAll<HTMLInputElement>('input[name="persona"]:checked'),
   ).map((i) => i.value);
+  const target = v('target');
   const config: Record<string, unknown> = {
     kind: v('kind'),
     label: v('label'),
@@ -27,14 +28,58 @@ export function readForm(form: HTMLFormElement): Record<string, unknown> {
     allowCheckout: checked('allowCheckout'),
     fakeScenario: v('scenario') || null,
   };
+  // A named target: the server fills the URLs from FIGURA_TARGETS (the typed URL is ignored).
+  if (target) config.target = target;
   if (v('seed')) config.seed = Number(v('seed'));
   if (v('priceScenarios')) config.priceScenarios = JSON.parse(v('priceScenarios'));
   return config;
 }
 
+/** Which Orqea is tested: preselected from the admin console's `target` claim when configured. */
+function targetPicker(ctx: Ctx, me: Me): { select: HTMLElement; notice: HTMLElement | null } {
+  const { doc, t } = ctx;
+  const select = h(
+    doc,
+    'select',
+    { name: 'target' },
+    h(doc, 'option', { value: '' }, t('form.targetCustom')),
+    ...me.targets.map((x) => h(doc, 'option', { value: x.name }, `${x.name} — ${x.api}`)),
+  ) as HTMLSelectElement;
+  // An unconfigured name matches no option: the select then stays on "custom URL".
+  select.value = me.target ?? '';
+  if (select.selectedIndex < 0) select.value = '';
+  if (me.target === null) return { select, notice: null };
+  const notice = me.targetConfigured
+    ? h(doc, 'p', { role: 'status' }, t('form.testing', { target: me.target }))
+    : h(doc, 'p', { role: 'alert' }, t('form.targetNotConfigured', { target: me.target }));
+  return { select, notice };
+}
+
+/** Queues the run; a refusal (INVALID_CONFIG, TARGET_NOT_CONFIGURED) is explained in the alert. */
+async function submitRun(ctx: Ctx, form: HTMLFormElement, alert: HTMLElement, ev: Event) {
+  ev.preventDefault();
+  try {
+    const { run } = await ctx.api.post<{ run: { id: string } }>('/api/runs', {
+      config: readForm(form),
+    });
+    ctx.go(`/runs/${run.id}`);
+  } catch (e) {
+    const detail =
+      e instanceof ApiError
+        ? ((e.body.issues as string[] | undefined) ?? [e.message]).join('; ')
+        : (e as Error).message;
+    alert.textContent = ctx.t('form.invalid', { detail });
+    alert.hidden = false;
+  }
+}
+
 export async function newRunView(ctx: Ctx): Promise<HTMLElement> {
   const { doc, t } = ctx;
-  const meta = await ctx.api.get<Meta>('/api/meta');
+  const [meta, me] = await Promise.all([
+    ctx.api.get<Meta>('/api/meta'),
+    ctx.api.get<Me>('/api/me'),
+  ]);
+  const picker = targetPicker(ctx, me);
   const input = (name: string, value = '', type = 'text') => h(doc, 'input', { name, value, type });
   const alert = h(doc, 'p', { role: 'alert', hidden: true });
   const form = h(
@@ -53,6 +98,7 @@ export async function newRunView(ctx: Ctx): Promise<HTMLElement> {
         h(doc, 'option', { value: 'volume' }, t('kind.volume')),
       ),
     ),
+    field(ctx, t('form.target'), picker.select),
     field(ctx, t('form.targetUrl'), input('targetUrl', 'http://fake-orqea:4100', 'url')),
     field(ctx, t('form.allowRemote'), input('allowRemote', '', 'checkbox')),
     field(ctx, t('form.confirmHost'), input('confirmHost')),
@@ -91,21 +137,13 @@ export async function newRunView(ctx: Ctx): Promise<HTMLElement> {
     alert,
     h(doc, 'button', { type: 'submit' }, t('form.submit')),
   ) as HTMLFormElement;
-  form.addEventListener('submit', async (ev) => {
-    ev.preventDefault();
-    try {
-      const { run } = await ctx.api.post<{ run: { id: string } }>('/api/runs', {
-        config: readForm(form),
-      });
-      ctx.go(`/runs/${run.id}`);
-    } catch (e) {
-      const detail =
-        e instanceof ApiError
-          ? ((e.body.issues as string[] | undefined) ?? [e.message]).join('; ')
-          : (e as Error).message;
-      alert.textContent = t('form.invalid', { detail });
-      alert.hidden = false;
-    }
-  });
-  return h(doc, 'section', {}, h(doc, 'h1', {}, t('form.title')), form);
+  form.addEventListener('submit', (ev) => void submitRun(ctx, form, alert, ev));
+  return h(
+    doc,
+    'section',
+    {},
+    h(doc, 'h1', {}, t('form.title')),
+    ...(picker.notice ? [picker.notice] : []),
+    form,
+  );
 }

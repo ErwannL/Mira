@@ -6,22 +6,21 @@
   },
   "area": "cards",
   "requires": ["create-card"],
-  "planGate": "bulk",
+  "planGate": "free",
   "minutes": 2,
   "ui": [
     {
       "action": "goto",
-      "path": "/boards"
+      "path": "/dashboard"
     },
     {
       "action": "click",
       "target": {
-        "role": "link",
+        "role": "button",
         "name": {
           "en": "{{boardName}}",
           "fr": "{{boardName}}"
-        },
-        "exact": true
+        }
       }
     },
     {
@@ -29,9 +28,10 @@
       "target": {
         "role": "button",
         "name": {
-          "en": "Select cards",
-          "fr": "Sélectionner des cartes"
-        }
+          "en": "Select",
+          "fr": "Sélectionner"
+        },
+        "exact": true
       }
     },
     {
@@ -39,29 +39,16 @@
       "target": {
         "role": "checkbox",
         "name": {
-          "en": "Select {{cardTitle}}",
-          "fr": "Sélectionner {{cardTitle}}"
+          "en": "{{cardTitle}}",
+          "fr": "{{cardTitle}}"
         }
       }
     },
     {
-      "action": "click",
-      "target": {
-        "role": "button",
-        "name": {
-          "en": "Mark selected high priority",
-          "fr": "Priorité haute pour la sélection"
-        }
-      }
-    },
-    {
-      "action": "expect",
-      "target": {
-        "role": "status",
-        "name": {
-          "en": "Cards updated",
-          "fr": "Cartes mises à jour"
-        }
+      "action": "expectText",
+      "text": {
+        "en": "1 card selected",
+        "fr": "1 carte sélectionnée"
       }
     }
   ],
@@ -70,21 +57,19 @@
       "method": "POST",
       "path": "/api/cards/bulk",
       "body": {
-        "cardIds": ["{{cardId}}"],
-        "action": "priority",
-        "value": "high"
+        "card_ids": ["{{cardId}}"],
+        "operations": [
+          {
+            "type": "complexity.set",
+            "complexity": "high"
+          }
+        ]
       },
-      "auth": true
+      "auth": true,
+      "expectStatus": [200]
     }
   ],
   "success": {
-    "ui": {
-      "role": "status",
-      "name": {
-        "en": "Cards updated",
-        "fr": "Cartes mises à jour"
-      }
-    },
     "apiStatus": 200
   },
   "frictionHints": {
